@@ -394,8 +394,12 @@ def main():
     global ENGINE, RAM_MB
     path = find_engine()
     if not path or not os.path.isfile(path[-1]):
-        print("Fairy-Stockfish 실행 파일을 이 폴더에 넣어 주세요.")
-        input("엔터를 누르면 닫힙니다.")
+        message = "Fairy-Stockfish 실행 파일을 찾을 수 없습니다. 프로그램 폴더를 확인해 주세요."
+        try:
+            import tkinter.messagebox as mb
+            mb.showerror("장기 엔진판", message)
+        except Exception:
+            print(message)
         return
     threads = os.cpu_count() or 2
     ram = RAM_MB = total_ram_mb()
@@ -431,8 +435,12 @@ def main():
                   " (최신 Fairy-Stockfish largeboard 버전이 필요할 수 있음)")
             ENGINE = Engine(path, threads, hash_mb, None)
     except Exception as e:
-        print("엔진을 시작하지 못했습니다:", e)
-        input("엔터를 누르면 닫힙니다.")
+        message = f"엔진을 시작하지 못했습니다.\\n\\n{e}\\n\\nCPU 호환 버전인지, 엔진 파일이 정상인지 확인해 주세요."
+        try:
+            import tkinter.messagebox as mb
+            mb.showerror("장기 엔진판 - 엔진 시작 오류", message)
+        except Exception:
+            print(message)
         return
     print(f"연결됨: {ENGINE.name}" + (" · 카카오 장기 규칙(janggimodern)" if getattr(ENGINE, "variant", "") == "janggimodern" else ""))
     if ENGINE.device == "cpu":
