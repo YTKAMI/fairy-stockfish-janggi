@@ -337,11 +337,11 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 with open(os.path.join(APP_DIR, HTML_NAME), "rb") as f:
                     page = f.read()
-                data_link = (b'<a href="/data" target="_blank" rel="noopener" '
-                    b'style="position:fixed;z-index:99999;right:18px;top:18px;'
-                    b'padding:12px 18px;border-radius:12px;background:#2457a6;'
-                    b'color:#fff;font-weight:700;text-decoration:none;'
-                    b'box-shadow:0 3px 12px #0004">데이터 만들기</a>')
+                data_link = ('<a href="/data" target="_blank" rel="noopener" '
+                    'style="position:fixed;z-index:99999;right:18px;top:18px;'
+                    'padding:12px 18px;border-radius:12px;background:#2457a6;'
+                    'color:#fff;font-weight:700;text-decoration:none;'
+                    'box-shadow:0 3px 12px #0004">데이터 만들기</a>').encode("utf-8")
                 if b"</body>" in page:
                     page = page.replace(b"</body>", data_link + b"</body>", 1)
                 self._send(200, page, "text/html; charset=utf-8")
