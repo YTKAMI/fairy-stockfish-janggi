@@ -7,6 +7,7 @@ on:
       - 'launcher.py'
       - 'janggi_server.py'
       - '장기엔진판.html'
+      - 'data_factory.html'
       - 'fairy-stockfish_x86-64-avx512.exe'
       - 'janggi_settings.json'
       - '.github/workflows/build-windows.yml'
@@ -40,11 +41,14 @@ jobs:
           pyinstaller --noconfirm --clean --onedir --windowed `
             --name JanggiEngine `
             --add-data "장기엔진판.html;." `
+            --add-data "data_factory.html;." `
             --add-binary "fairy-stockfish_x86-64.exe;." `
             --add-data "janggi_settings.json;." `
             launcher.py
           if (!(Test-Path 'dist/JanggiEngine/JanggiEngine.exe')) { throw 'EXE build failed' }
+          if (!(Test-Path 'data_factory.html')) { throw 'data_factory.html is missing; upload the original data factory HTML first.' }
           Copy-Item '장기엔진판.html' 'dist/JanggiEngine/장기엔진판.html' -Force
+          Copy-Item 'data_factory.html' 'dist/JanggiEngine/data_factory.html' -Force
           Copy-Item 'fairy-stockfish_x86-64.exe' 'dist/JanggiEngine/fairy-stockfish_x86-64.exe' -Force
           Copy-Item 'janggi_settings.json' 'dist/JanggiEngine/janggi_settings.json' -Force
       - name: Package portable folder
