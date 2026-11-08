@@ -318,22 +318,45 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
 
+    def end_headers(self):
+        # Apply cross-origin isolation to every response, including redirects,
+        # errors, and static/diagnostic resources.
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        self.send_header("Origin-Agent-Cluster", "?1")
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def _send(self, code, body, ctype="application/json; charset=utf-8"):
         if isinstance(body, (dict, list)):
             body = json.dumps(body, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", ctype)
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
-        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
-        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
     def do_GET(self):
         u = urlparse(self.path)
-        if u.path in ("/", "/index.html"):
+        if u.path == "/__isolation_check__":
+            page = """<!doctype html><meta charset="utf-8">
+<title>WASM 격리 검사</title>
+<style>body{font:16px system-ui;padding:24px;line-height:1.6}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style>
+<h2>멀티스레드 WASM 환경 검사</h2>
+<pre id="r">검사 중...</pre>
+<script>
+const result={url:location.href,secureContext:isSecureContext,
+crossOriginIsolated:crossOriginIsolated,
+SharedArrayBuffer:typeof SharedArrayBuffer!=="undefined",
+sharedMemoryTest:false};
+try{const m=new WebAssembly.Memory({initial:1,maximum:2,shared:true});
+result.sharedMemoryTest=m.buffer instanceof SharedArrayBuffer}
+catch(e){result.sharedMemoryError=String(e)}
+document.getElementById("r").textContent=JSON.stringify(result,null,2);
+</script>"""
+            self._send(200, page.encode("utf-8"), "text/html; charset=utf-8")
+        elif u.path in ("/", "/index.html"):
             try:
                 with open(os.path.join(APP_DIR, HTML_NAME), "rb") as f:
                     page = f.read()
