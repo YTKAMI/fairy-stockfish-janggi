@@ -49,7 +49,7 @@ class MainActivity:Activity(){
         window.decorView.systemUiVisibility=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         if(Build.VERSION.SDK_INT>=33)requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS),91)
         val filter=IntentFilter(FactoryService.ACTION_PROGRESS)
-        if(Build.VERSION.SDK_INT>=33)registerReceiver(receiver,filter,Context.RECEIVER_NOT_EXPORTED) else @Suppress("DEPRECATION") registerReceiver(receiver,filter)
+        if(Build.VERSION.SDK_INT>=33)registerReceiver(receiver,filter,Context.RECEIVER_NOT_EXPORTED) else registerReceiver(receiver,filter)
 
         val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(paper)}
         val header=TextView(this).apply{text="장기 데이터 공장";textSize=24f;typeface=Typeface.DEFAULT_BOLD;setTextColor(ink);gravity=Gravity.CENTER;setPadding(0,dp(12),0,dp(10))}
@@ -94,7 +94,7 @@ class MainActivity:Activity(){
         dataCard.addView(progress,LinearLayout.LayoutParams(-1,dp(8)).apply{topMargin=dp(9);bottomMargin=dp(10)})
         val factoryButtons=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
         factoryButtons.addView(button("데이터 생성 시작",green){startFactory()},LinearLayout.LayoutParams(0,dp(48),1f).apply{rightMargin=dp(5)})
-        factoryButtons.addView(button("일시 중지",red){stopFactory()},LinearLayout.LayoutParams(0,dp(48),1f).apply{leftMargin=dp(5)})
+        factoryButtons.addView(button("생성 중지",red){stopFactory()},LinearLayout.LayoutParams(0,dp(48),1f).apply{leftMargin=dp(5)})
         dataCard.addView(factoryButtons)
         dataCard.addView(button("NPZ 파일 내보내기",Color.rgb(83,96,107)){exportNpz()},LinearLayout.LayoutParams(-1,dp(44)).apply{topMargin=dp(8)})
         body.addView(dataCard)
