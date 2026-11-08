@@ -1,0 +1,48 @@
+name: Build Windows EXE
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'launcher.py'
+      - 'janggi_server.py'
+      - '장기엔진판.html'
+      - 'fairy-stockfish_x86-64-avx512.exe'
+      - 'janggi_settings.json'
+      - '.github/workflows/build-windows.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PyInstaller
+        run: python -m pip install --upgrade pip pyinstaller==6.17.0
+      - name: Build EXE
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onedir --windowed `
+            --name JanggiEngine `
+            --add-data "장기엔진판.html;." `
+            --add-binary "fairy-stockfish_x86-64-avx512.exe;." `
+            --add-data "janggi_settings.json;." `
+            launcher.py
+          if (!(Test-Path 'dist/JanggiEngine/JanggiEngine.exe')) { throw 'EXE build failed' }
+          Copy-Item '장기엔진판.html' 'dist/JanggiEngine/장기엔진판.html' -Force
+          Copy-Item 'fairy-stockfish_x86-64-avx512.exe' 'dist/JanggiEngine/fairy-stockfish_x86-64-avx512.exe' -Force
+          Copy-Item 'janggi_settings.json' 'dist/JanggiEngine/janggi_settings.json' -Force
+      - name: Package portable folder
+        shell: pwsh
+        run: Compress-Archive -Path 'dist/JanggiEngine/*' -DestinationPath 'JanggiEngine-Windows.zip' -Force
+      - name: Upload EXE package
+        uses: actions/upload-artifact@v4
+        with:
+          name: JanggiEngine-Windows
+          path: JanggiEngine-Windows.zip
+          if-no-files-found: error
