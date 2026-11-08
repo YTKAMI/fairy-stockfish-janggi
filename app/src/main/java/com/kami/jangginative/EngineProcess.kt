@@ -11,13 +11,14 @@ class EngineProcess(private val context: Context) {
     @Synchronized fun start() {
         if (process != null) return
         val file = copyAsset("fairy-stockfish")
-        val nnueFile = copyAsset("janggi-9991472750de.nnue")
+        val nnueName = "janggi-9991472750de.nnue"
+        val nnueFile = if (context.assets.list("")?.contains(nnueName) == true) copyAsset(nnueName) else null
         if (!file.setExecutable(true, true)) throw IOException("엔진 실행 권한을 설정하지 못했습니다.")
         process = ProcessBuilder(file.absolutePath).directory(context.filesDir).redirectErrorStream(true).start()
         writer = process!!.outputStream.bufferedWriter(); reader = process!!.inputStream.bufferedReader()
         send("uci"); readUntil("uciok")
         send("setoption name UCI_Variant value janggi"); send("setoption name Threads value 1"); send("setoption name Hash value 128")
-        send("setoption name EvalFile value ${nnueFile.absolutePath}")
+        if (nnueFile != null) send("setoption name EvalFile value ${nnueFile.absolutePath}")
         send("isready"); readUntil("readyok")
     }
     private fun copyAsset(name:String):File {
