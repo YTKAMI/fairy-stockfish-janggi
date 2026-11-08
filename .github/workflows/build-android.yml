@@ -31,18 +31,22 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
       - name: Install Android NDK
         run: sdkmanager "ndk;27.2.12479018"
-      - name: Build ARM64 Fairy-Stockfish Janggi engine
+      - name: Build ARM64 Fairy-Stockfish with embedded Janggi NNUE
         shell: bash
         run: |
           set -euxo pipefail
           mkdir -p app/src/main/assets
-          git clone --depth 1 https://github.com/fairy-stockfish/Fairy-Stockfish.git engine-src
+          git clone --depth 1 --recurse-submodules https://github.com/fairy-stockfish/Fairy-Stockfish-NNUE.git engine-src
+          NNUE_NET="janggi-9991472750de.nnue"
+          test -s "engine-src/$NNUE_NET"
+          cp "engine-src/$NNUE_NET" engine-src/Fairy-Stockfish/src/
+          sed -i "s/nn-[a-z0-9]\\{12\\}.nnue/$NNUE_NET/" engine-src/Fairy-Stockfish/src/evaluate.h
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
-          make -C engine-src/src -j2 build ARCH=armv8 COMP=ndk OS=Android largeboards=yes
-          install -m 755 engine-src/src/stockfish app/src/main/assets/fairy-stockfish
-          echo "NNUE is supplied separately; building a diagnostic APK without network guessing."
-          ls -lh app/src/main/assets
+          make -C engine-src/Fairy-Stockfish/src clean EXE=fairy-stockfish
+          make -C engine-src/Fairy-Stockfish/src -j2 build EXE=fairy-stockfish ARCH=armv8 COMP=ndk OS=Android largeboards=yes nnue=yes load_net=
+          install -m 755 engine-src/Fairy-Stockfish/src/fairy-stockfish app/src/main/assets/fairy-stockfish
+          ls -lh app/src/main/assets/fairy-stockfish
       - name: Build APK
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
