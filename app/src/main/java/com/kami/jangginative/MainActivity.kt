@@ -104,7 +104,7 @@ class MainActivity:Activity(){
     }
     private fun card()=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(13),dp(11),dp(13),dp(12));background=round(Color.WHITE,dp(13),Color.rgb(232,225,207))}
     private fun sectionTitle(s:String)=TextView(this).apply{text=s;textSize=14f;typeface=Typeface.DEFAULT_BOLD;setTextColor(ink);setPadding(0,0,0,dp(8))}
-    private fun field(label:String,value:String)=EditText(this).apply{hint=label;setText(value);textSize=14f;singleLine=true;inputType=android.text.InputType.TYPE_CLASS_NUMBER;setPadding(dp(9),0,dp(9),0);background=round(Color.rgb(248,247,241),dp(8),Color.rgb(225,219,204))}
+    private fun field(label:String,value:String)=EditText(this).apply{hint=label;setText(value);textSize=14f;setSingleLine(true);inputType=android.text.InputType.TYPE_CLASS_NUMBER;setPadding(dp(9),0,dp(9),0);background=round(Color.rgb(248,247,241),dp(8),Color.rgb(225,219,204))}
     private fun fieldRow(a:EditText,b:EditText?):LinearLayout{
         val row=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
         fun wrap(v:EditText){val box=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL};val label=TextView(this@MainActivity).apply{text=v.hint;textSize=10f;setTextColor(muted);setPadding(0,0,0,dp(3))};box.addView(label);box.addView(v,LinearLayout.LayoutParams(-1,dp(42)));row.addView(box,LinearLayout.LayoutParams(0,dp(64),1f).apply{rightMargin=dp(5)})}
