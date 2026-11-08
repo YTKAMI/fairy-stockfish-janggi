@@ -83,7 +83,7 @@ class EngineProcess(private val context: Context) {
     }
 
     @Synchronized fun command(command:String, until:String):String {
-        if(process==null || writer==null) start()
+        if(process==null || process?.isAlive!=true || writer==null || reader==null) start()
         send(command)
         return readUntil(until)
     }
