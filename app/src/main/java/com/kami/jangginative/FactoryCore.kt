@@ -59,7 +59,7 @@ object JanggiDataFactory {
     fun run(ctx:Context,cfg:FactoryConfig,stop:AtomicBoolean,report:(FactoryProgress)->Unit){
         require(cfg.games>0&&cfg.workers>0&&cfg.nodes>0&&cfg.maxPlies>=2)
         require(cfg.hashMb in 16..4096){"전체 Hash는 16MB~4096MB 범위"}
-        val workers=minOf(cfg.workers,Runtime.getRuntime().availableProcessors().coerceAtLeast(1),cfg.games)
+        val workers=minOf(cfg.workers,Runtime.getRuntime().availableProcessors().coerceAtLeast(1),cfg.games,(cfg.hashMb/16).coerceAtLeast(1))
         val hash=(cfg.hashMb/workers).coerceAtLeast(16)
         val dir=File(ctx.getExternalFilesDir(null)?:ctx.filesDir,"JanggiNPZ").apply{mkdirs()}
         val pool=java.util.concurrent.Executors.newFixedThreadPool(workers)
