@@ -50,7 +50,7 @@ object JanggiDataFactory {
     private val layouts=arrayOf("마상상마","상마마상","마상마상","상마상마")
     private val values=intArrayOf(0,0,3,3,5,13,7,2)
     private data class Ply(val f:Int,val t:Int,val cap:Boolean)
-    private data class Rec(val b:ByteArray,val side:Byte,val move:Short,val score:Short)
+    private data class Rec(val b:ByteArray,val side:Byte,val move:Short,val score:Short,val result:Byte)
 
     fun parseFen(fen:String):ByteArray{val a=ArrayList<Byte>(90);fen.substringBefore(' ').split('/').forEach{row->row.forEach{c->
         if(c.isDigit())repeat(c.digitToInt()){a.add(0)}else{val t=when(c.lowercaseChar()){'k'->1;'a'->2;'b'->3;'n'->4;'r'->5;'c'->6;'p'->7;else->0};a.add((if(c.isUpperCase())t else 8+t).toByte())}}}
@@ -82,13 +82,13 @@ object JanggiDataFactory {
                         if(allowed.isEmpty()){result=if(side==0)-1 else 1;reason=if(check)"외통" else "합법수 없음";break}
                         val (best,score)=engine.think(fen,cfg.nodes,allowed)
                         if(best=="(none)"||best=="none"||best=="0000"){result=if(side==0)-1 else 1;reason="외통";break}
-                        val (f,t)=coords(best);recs.add(Rec(board.copyOf(),side.toByte(),(f*90+t).toShort(),score.toShort()))
+                        val (f,t)=coords(best);recs.add(Rec(board.copyOf(),side.toByte(),(f*90+t).toShort(),score.toShort(),0))
                         val cap=f!=t&&board[t].toInt()!=0
                         if(f==t)passes++ else{passes=0;board[t]=board[f];board[f]=0}
                         played.add(Ply(f,t,cap));hist.add(best)
                     }
                     if(result==0)result=material(board)
-                    if(!stop.get()){buf.addAll(recs);if(result>0)cw.incrementAndGet()else hw.incrementAndGet()
+                    if(!stop.get()){buf.addAll(recs.map{it.copy(result=(if(it.side.toInt()==0)result else -result).toByte())});if(result>0)cw.incrementAndGet()else hw.incrementAndGet()
                         val n=done.incrementAndGet();val total=pos.addAndGet(recs.size.toLong())
                         report(FactoryProgress(n,cfg.games,total,cw.get(),hw.get(),n.toString()+"/"+cfg.games+"판 · "+total+"국면 · 초 "+cw.get()+"승 / 한 "+hw.get()+"승 · "+reason))}
                     if(buf.size>=2000)flush(dir,buf,worker)
@@ -120,7 +120,7 @@ object JanggiDataFactory {
             npy(z,"boards.npy",a.flatMap{it.b.asIterable()}.toByteArray(),"|i1",a.size,90)
             npy(z,"side.npy",a.map{it.side}.toByteArray(),"|i1",a.size)
             npy(z,"move.npy",shorts(a.map{it.move}),"<i2",a.size);npy(z,"score.npy",shorts(a.map{it.score}),"<i2",a.size)
-            npy(z,"result.npy",a.map{if(it.side.toInt()==0)1 else -1}.map{it.toByte()}.toByteArray(),"|i1",a.size)}
+            npy(z,"result.npy",a.map{it.result}.toByteArray(),"|i1",a.size)}
         a.clear()}
     private fun shorts(a:List<Short>)=ByteBuffer.allocate(a.size*2).order(ByteOrder.LITTLE_ENDIAN).apply{a.forEach{putShort(it)}}.array()
     private fun npy(z:ZipOutputStream,name:String,data:ByteArray,descr:String,vararg shape:Int){val sh=if(shape.size==1)"("+shape[0]+",)" else "("+shape.joinToString(", ")+")"
