@@ -324,6 +324,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -333,9 +336,23 @@ class Handler(BaseHTTPRequestHandler):
         if u.path in ("/", "/index.html"):
             try:
                 with open(os.path.join(APP_DIR, HTML_NAME), "rb") as f:
-                    self._send(200, f.read(), "text/html; charset=utf-8")
+                    page = f.read()
+                data_link = (b'<a href="/data" target="_blank" rel="noopener" '
+                    b'style="position:fixed;z-index:99999;right:18px;top:18px;'
+                    b'padding:12px 18px;border-radius:12px;background:#2457a6;'
+                    b'color:#fff;font-weight:700;text-decoration:none;'
+                    b'box-shadow:0 3px 12px #0004">데이터 만들기</a>')
+                if b"</body>" in page:
+                    page = page.replace(b"</body>", data_link + b"</body>", 1)
+                self._send(200, page, "text/html; charset=utf-8")
             except OSError:
                 self._send(404, {"error": f"{HTML_NAME} 파일이 없습니다."})
+        elif u.path in ("/data", "/data/"):
+            try:
+                with open(os.path.join(APP_DIR, "data_factory.html"), "rb") as f:
+                    self._send(200, f.read(), "text/html; charset=utf-8")
+            except OSError:
+                self._send(404, {"error": "데이터 생성 파일 data_factory.html이 없습니다."})
         elif u.path == "/api/hello":
             self._send(200, {"ok": True, "name": ENGINE.name, "threads": ENGINE.threads, "hash": ENGINE.hash,
                              "cpus": os.cpu_count(),
