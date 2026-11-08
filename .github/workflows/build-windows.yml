@@ -43,6 +43,7 @@ jobs:
             --name JanggiEngine `
             --paths . `
             --hidden-import janggi_server `
+            --add-data "janggi_server.py;." `
             --add-data "장기엔진판.html;." `
             --add-data "data_factory.html;." `
             --add-binary "fairy-stockfish_x86-64.exe;." `
@@ -50,6 +51,7 @@ jobs:
             launcher.py
           if (!(Test-Path 'dist/JanggiEngine/JanggiEngine.exe')) { throw 'EXE build failed' }
           if (!(Test-Path 'data_factory.html')) { throw 'data_factory.html is missing; upload the original data factory HTML first.' }
+          Copy-Item 'janggi_server.py' 'dist/JanggiEngine/_internal/janggi_server.py' -Force -ErrorAction SilentlyContinue
           Copy-Item '장기엔진판.html' 'dist/JanggiEngine/장기엔진판.html' -Force
           Copy-Item 'data_factory.html' 'dist/JanggiEngine/data_factory.html' -Force
           Copy-Item 'fairy-stockfish_x86-64.exe' 'dist/JanggiEngine/fairy-stockfish_x86-64.exe' -Force
