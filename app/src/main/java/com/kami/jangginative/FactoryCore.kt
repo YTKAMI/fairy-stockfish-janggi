@@ -105,7 +105,7 @@ object JanggiDataFactory {
         intArrayOf(0,2,4,6,8).forEach{b[3][it]='p';b[6][it]='P'}
         return b.joinToString("/"){row->val s=StringBuilder();var e=0;row.forEach{c->if(c==' ')e++else{if(e>0){s.append(e);e=0};s.append(c)}};if(e>0)s.append(e);s.toString()}+" w - - 0 1"}
     private fun coords(m:String):Pair<Int,Int>{val x=Regex("^([a-i])(10|[1-9])([a-i])(10|[1-9])(?:[a-z])?$").matchEntire(m)?:throw IOException("좌표 해석 오류: "+m)
-        return ((10-x.groupValues[2].toInt())*9+x.groupValues[1][0]-'a') to ((10-x.groupValues[4].toInt())*9+x.groupValues[3][0]-'a')}
+        return ((10-x.groupValues[2].toInt())*9+(x.groupValues[1][0]-'a')) to ((10-x.groupValues[4].toInt())*9+(x.groupValues[3][0]-'a'))}
     private fun sq(i:Int)=('a'+i%9).toString()+(10-i/9)
     private fun isPass(m:String)=coords(m).let{it.first==it.second}
     private fun pass(b:ByteArray,side:Int):String{val k=if(side==0)1 else 9;val i=b.indexOf(k.toByte());if(i<0)throw IOException("왕을 찾지 못함");val s=sq(i);return s+s}
