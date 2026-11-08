@@ -18,6 +18,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Download CPU-compatible Janggi engine
+        shell: pwsh
+        run: |
+          # Generic x86-64 build: broadest CPU compatibility; includes Janggi NNUE.
+          $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish-NNUE/releases/tags/janggi-9991472750de-new'
+          $asset = $release.assets | Where-Object { $_.name -eq 'fairy-stockfish_x86-64.exe' } | Select-Object -First 1
+          if (-not $asset) { throw 'Compatible Fairy-Stockfish Janggi engine asset not found.' }
+          if (Test-Path 'fairy-stockfish_x86-64-avx512.exe') { Remove-Item 'fairy-stockfish_x86-64-avx512.exe' -Force }
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile 'fairy-stockfish_x86-64.exe'
+          if ((Get-Item 'fairy-stockfish_x86-64.exe').Length -lt 1000000) { throw 'Downloaded engine file is unexpectedly small.' }
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -30,12 +40,12 @@ jobs:
           pyinstaller --noconfirm --clean --onedir --windowed `
             --name JanggiEngine `
             --add-data "장기엔진판.html;." `
-            --add-binary "fairy-stockfish_x86-64-avx512.exe;." `
+            --add-binary "fairy-stockfish_x86-64.exe;." `
             --add-data "janggi_settings.json;." `
             launcher.py
           if (!(Test-Path 'dist/JanggiEngine/JanggiEngine.exe')) { throw 'EXE build failed' }
           Copy-Item '장기엔진판.html' 'dist/JanggiEngine/장기엔진판.html' -Force
-          Copy-Item 'fairy-stockfish_x86-64-avx512.exe' 'dist/JanggiEngine/fairy-stockfish_x86-64-avx512.exe' -Force
+          Copy-Item 'fairy-stockfish_x86-64.exe' 'dist/JanggiEngine/fairy-stockfish_x86-64.exe' -Force
           Copy-Item 'janggi_settings.json' 'dist/JanggiEngine/janggi_settings.json' -Force
       - name: Package portable folder
         shell: pwsh
