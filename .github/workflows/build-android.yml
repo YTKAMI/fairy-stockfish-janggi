@@ -41,11 +41,7 @@ jobs:
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
           make -C engine-src/src -j2 build ARCH=armv8 COMP=ndk OS=Android largeboards=yes
           install -m 755 engine-src/src/stockfish app/src/main/assets/fairy-stockfish
-          release_json="$(curl -fsSL https://api.github.com/repos/fairy-stockfish/Fairy-Stockfish-NNUE/releases/tags/janggi-9991472750de-new)"
-          nnue_url="$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(a["browser_download_url"] for a in d["assets"] if a["name"].endswith(".nnue") and "janggi-9991472750de" in a["name"]))' <<< "$release_json")"
-          test -n "$nnue_url"
-          curl -fL "$nnue_url" -o app/src/main/assets/janggi-9991472750de.nnue
-          chmod 644 app/src/main/assets/janggi-9991472750de.nnue
+          echo "NNUE is supplied separately; building a diagnostic APK without network guessing."
           ls -lh app/src/main/assets
       - name: Build APK
         run: gradle --no-daemon assembleDebug
