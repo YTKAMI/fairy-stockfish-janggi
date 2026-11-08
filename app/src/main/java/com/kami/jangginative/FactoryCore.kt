@@ -56,7 +56,7 @@ object JanggiDataFactory {
         if(c.isDigit())repeat(c.digitToInt()){a.add(0)}else{val t=when(c.lowercaseChar()){'k'->1;'a'->2;'b'->3;'n'->4;'r'->5;'c'->6;'p'->7;else->0};a.add((if(c.isUpperCase())t else 8+t).toByte())}}}
         require(a.size==90){"장기판 칸 수 오류"};return a.toByteArray()}
 
-    fun run(ctx:Context,cfg:FactoryConfig,stop:AtomicBoolean,report:(FactoryProgress)->Unit){
+    fun run(ctx:Context,cfg:FactoryConfig,stop:AtomicBoolean,paused:AtomicBoolean,report:(FactoryProgress)->Unit){
         require(cfg.games>0&&cfg.workers>0&&cfg.nodes>0&&cfg.maxPlies>=2)
         require(cfg.hashMb in 16..4096){"전체 Hash는 16MB~4096MB 범위"}
         val workers=minOf(cfg.workers,Runtime.getRuntime().availableProcessors().coerceAtLeast(1),cfg.games,(cfg.hashMb/16).coerceAtLeast(1))
@@ -71,7 +71,8 @@ object JanggiDataFactory {
                 repeat(count){if(stop.get())return@repeat
                     val start=startFen(rng);val board=parseFen(start);val hist=mutableListOf<String>();val played=mutableListOf<Ply>();val recs=mutableListOf<Rec>()
                     var passes=0;var result=0;var reason="수 제한"
-                    for(ply in 0 until minOf(300,cfg.maxPlies)){if(stop.get())break
+                    for(ply in 0 until minOf(300,cfg.maxPlies)){while(paused.get()&&!stop.get())Thread.sleep(250);if(stop.get())break
+                        if(android.os.Build.VERSION.SDK_INT>=29){val thermal=(ctx.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager).currentThermalStatus;if(thermal>=android.os.PowerManager.THERMAL_STATUS_SEVERE)Thread.sleep(if(thermal>=android.os.PowerManager.THERMAL_STATUS_CRITICAL)4000 else 1500)}
                         val fen=start+(if(hist.isEmpty())"" else " moves "+hist.joinToString(" "))
                         val side=ply and 1;val check=engine.check(fen);val legal=engine.legal(fen).toMutableList()
                         if(!check){val pass=pass(board,side);if(!legal.contains(pass))legal.add(pass)}
