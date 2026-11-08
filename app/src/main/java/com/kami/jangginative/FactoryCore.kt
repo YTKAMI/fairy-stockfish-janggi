@@ -17,8 +17,8 @@ private class JanggiEngine(ctx:Context,hash:Int):Closeable {
     private val w:BufferedWriter
     private val r:BufferedReader
     init {
-        val f=File(ctx.filesDir,"fairy-stockfish")
-        if(!f.exists()||f.length()==0L)ctx.assets.open("fairy-stockfish").use{s->f.outputStream().use{s.copyTo(it)}}
+        val f=File(ctx.applicationInfo.nativeLibraryDir,"libfairy-stockfish.so")
+        if(!f.exists())throw FileNotFoundException("내장 ARM64 엔진 파일이 없습니다.")
         if(!f.setExecutable(true,true))throw IOException("엔진 실행 권한 설정 실패")
         p=ProcessBuilder(f.absolutePath).directory(ctx.filesDir).redirectErrorStream(true).start()
         w=p.outputStream.bufferedWriter();r=p.inputStream.bufferedReader()
