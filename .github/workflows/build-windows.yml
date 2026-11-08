@@ -38,14 +38,19 @@ jobs:
       - name: Build EXE
         shell: pwsh
         run: |
+          if (!(Test-Path 'janggi_server.py')) { throw 'janggi_server.py is missing from repository root.' }
           pyinstaller --noconfirm --clean --onedir --windowed `
             --name JanggiEngine `
+            --paths . `
+            --hidden-import janggi_server `
             --add-data "장기엔진판.html;." `
             --add-data "data_factory.html;." `
             --add-binary "fairy-stockfish_x86-64.exe;." `
             --add-data "janggi_settings.json;." `
             launcher.py
           if (!(Test-Path 'dist/JanggiEngine/JanggiEngine.exe')) { throw 'EXE build failed' }
+          & pyi-archive_viewer -l 'dist/JanggiEngine/JanggiEngine.exe' | Out-File -FilePath 'archive_contents.txt' -Encoding utf8
+          if (-not (Select-String -Path 'archive_contents.txt' -Pattern 'janggi_server' -Quiet)) { throw 'janggi_server module was not bundled into the EXE.' }
           if (!(Test-Path 'data_factory.html')) { throw 'data_factory.html is missing; upload the original data factory HTML first.' }
           Copy-Item '장기엔진판.html' 'dist/JanggiEngine/장기엔진판.html' -Force
           Copy-Item 'data_factory.html' 'dist/JanggiEngine/data_factory.html' -Force
