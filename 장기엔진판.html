@@ -1,0 +1,1199 @@
+<title>장기 엔진판</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: 나무 판이 주인공, 오른쪽은 기보 노트처럼 조용한 패널. 좁은 화면에서는 세로로 쌓임. */
+:root{
+  --bg:#e4e8e2; --surface:#f3f5f1; --ink:#1b211d; --muted:#5d6a62; --rule:#c9d0c8;
+  --cho:#13614f; --han:#ad2a1f; --focus:#c98a1a; --code:#e9ede7;
+  --f-display:"Noto Serif KR","Batang","Nanum Myeongjo",serif;
+  --f-body:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141917; --surface:#1d2420; --ink:#e3e8e2; --muted:#93a198; --rule:#2f3a34;
+  --cho:#55b496; --han:#e8675a; --focus:#e2a53b; --code:#171d1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --surface:#1d2420; --ink:#e3e8e2; --muted:#93a198; --rule:#2f3a34;
+  --cho:#55b496; --han:#e8675a; --focus:#e2a53b; --code:#171d1a; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px}
+.app{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+@media (max-width:860px){.app{grid-template-columns:minmax(0,1fr)}}
+.board-row{display:flex;gap:8px;min-width:0}
+.evalbar{width:14px;flex:none;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;background:var(--han);position:relative}
+.evalbar .fill{background:var(--cho);margin-top:auto;height:50%;transition:height .4s ease}
+.evalbar.flip{flex-direction:column-reverse;background:var(--cho)}
+.evalbar.flip .fill{background:var(--han);margin-top:0;margin-bottom:auto}
+.evalbar::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed rgba(255,255,255,.7)}
+.board-wrap{flex:1;min-width:0}
+svg.board{width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 10px 30px rgba(40,25,5,.25),0 2px 4px rgba(40,25,5,.2);touch-action:manipulation;cursor:pointer;user-select:none}
+.panel{display:flex;flex-direction:column;gap:14px;min-width:0}
+header h1{font-family:var(--f-display);font-weight:900;font-size:2.1rem;line-height:1;margin:0;display:flex;align-items:baseline;gap:10px;text-wrap:balance}
+header h1 small{font-size:.95rem;font-weight:600;color:var(--muted);letter-spacing:.2em}
+header p{margin:6px 0 0;color:var(--muted);font-size:.85rem}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px}
+.turn{display:flex;align-items:center;gap:10px;font-weight:600;font-size:1.05rem}
+.chip{width:13px;height:13px;border-radius:3px;transform:rotate(22.5deg);flex:none}
+.chip.c{background:var(--cho)}.chip.h{background:var(--han)}
+.msg{color:var(--muted);min-height:1.5em;margin-top:4px}
+.msg strong{color:var(--han);font-family:var(--f-display);font-size:1.15rem}
+.msg strong.ok{color:var(--cho)}
+.engine-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.ev{font-variant-numeric:tabular-nums;font-size:1.6rem;font-weight:600;font-family:var(--f-body)}
+.ev.c{color:var(--cho)}.ev.h{color:var(--han)}
+.meta{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.pv{margin-top:6px;font-size:.9rem;background:var(--code);border-radius:6px;padding:8px 10px;min-height:2.6em;overflow-wrap:anywhere}
+.pv .c{color:var(--cho)}.pv .h{color:var(--han)}
+.lbl{font-size:.72rem;letter-spacing:.08em;color:var(--muted)}
+.score{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums;margin-top:10px;font-size:.88rem;color:var(--muted)}
+.score b{font-weight:600}.score .c b{color:var(--cho)}.score .h b{color:var(--han)}
+.btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+button{font:inherit;font-size:.86rem;padding:7px 6px;border-radius:6px;border:1px solid var(--rule);background:var(--surface);color:var(--ink);cursor:pointer}
+button:hover:not(:disabled){border-color:var(--muted)}
+button.primary{background:var(--cho);border-color:var(--cho);color:#fff;font-weight:600;padding:8px 14px}
+button:disabled{opacity:.4;cursor:default}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.9rem;margin-top:8px}
+details summary{cursor:pointer;font-weight:600}
+form{display:grid;gap:10px;margin-top:12px}
+fieldset{border:0;padding:0;margin:0}
+legend{font-size:.72rem;letter-spacing:.08em;color:var(--muted);padding:0;margin-bottom:4px}
+.seg{display:flex;flex-wrap:wrap;gap:4px 12px}
+.seg label{display:flex;align-items:center;gap:5px;font-size:.9rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row2 label{display:block;font-size:.72rem;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+select{font:inherit;font-size:.9rem;padding:6px;border-radius:6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);width:100%}
+.hint{font-size:.78rem;color:var(--muted)}
+.cfg-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.cfg-foot button{flex:none;padding:6px 14px}
+.log-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.log-head button{padding:3px 8px;font-size:.78rem}
+ol.moves{margin:0;padding:0;list-style:none;max-height:210px;overflow:auto;display:grid;grid-template-columns:2.4em 1fr 1fr;gap:2px 8px;font-variant-numeric:tabular-nums;font-size:.88rem}
+ol.moves .n{color:var(--muted)}ol.moves .c{color:var(--cho)}ol.moves .h{color:var(--han)}
+.empty{color:var(--muted);font-size:.88rem;grid-column:1/-1}
+.thinking{animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+@media (prefers-reduced-motion:reduce){.thinking{animation:none}.evalbar .fill{transition:none}}
+</style>
+
+<div class="app">
+  <div class="board-row">
+    <div class="evalbar" id="evalbar" aria-hidden="true"><div class="fill" id="evalfill"></div></div>
+    <div class="board-wrap"><svg class="board" id="board" viewBox="0 0 560 620" role="img" aria-label="장기판"></svg></div>
+  </div>
+  <aside class="panel">
+    <header>
+      <h1>장기 <small>楚 · 漢</small></h1>
+      <p id="engineName">내장 엔진: 반복 심화 · PVS · 치환표 · 널무브 · LMR (Stockfish 탐색 구조 이식)</p>
+    </header>
+    <section class="card" aria-live="polite">
+      <div class="turn"><span class="chip" id="turnChip"></span><span id="turnText"></span></div>
+      <div class="msg" id="msg"></div>
+      <div class="score"><span class="c">초 <b id="scoreC">72</b></span><span id="moveNo">0수</span><span class="h">한 <b id="scoreH">73.5</b> (덤 1.5)</span></div>
+    </section>
+    <section class="card">
+      <div class="engine-head">
+        <div><div class="lbl">엔진 형세 판단</div><div class="ev" id="ev">—</div></div>
+        <div class="meta" id="meta">대기 중</div>
+      </div>
+      <div class="pv" id="pv"><span class="hint">엔진이 읽은 최선 수순이 여기에 나옵니다.</span></div>
+      <label class="toggle"><input type="checkbox" id="analyze"> 실시간 분석 (내 차례에 엔진이 계속 읽음)</label>
+    </section>
+    <section class="card" id="editBar" hidden>
+      <div class="lbl">판 편집 — 기물 빼고 시작</div>
+      <p class="hint" style="margin:6px 0 10px">빼고 싶은 기물을 누르세요. 다시 누르면 돌아옵니다. 궁은 뺄 수 없습니다.</p>
+      <div class="row2">
+        <div><label for="editSide">먼저 둘 쪽</label><select id="editSide"><option value="c">초</option><option value="h">한</option></select></div>
+        <div><label>&nbsp;</label><button id="editAll" type="button" style="width:100%">전부 되돌리기</button></div>
+      </div>
+      <div class="cfg-foot"><span class="hint" id="editInfo"></span><span style="display:flex;gap:6px"><button id="editCancel" type="button">취소</button><button id="editStart" class="primary" type="button">이 배치로 시작</button></span></div>
+    </section>
+    <section class="card" id="engineCfg" hidden>
+      <div class="lbl">엔진 성능 설정</div>
+      <div class="row2" style="margin-top:8px">
+        <div><label for="cfgHash">해시 메모리</label><select id="cfgHash"></select></div>
+        <div><label for="cfgThreads">CPU 스레드</label><select id="cfgThreads"></select></div>
+      </div>
+      <div class="cfg-foot"><span class="hint" id="cfgNote"></span><button id="cfgApply" type="button">적용</button></div>
+    </section>
+    <div class="btns">
+      <button id="undo" type="button">무르기</button>
+      <button id="hintBtn" type="button">힌트</button>
+      <button id="pass" type="button">한수쉼</button>
+      <button id="now" type="button">지금 두기</button>
+      <button id="flip" type="button">판 뒤집기</button>
+      <button id="label" type="button">한글 표기</button>
+      <button id="resign" type="button">기권</button>
+      <button id="newBtn" type="button">새 대국</button>
+    </div>
+    <section class="card">
+      <details id="setup">
+        <summary>대국 설정</summary>
+        <form id="form">
+          <fieldset><legend>대국 방식</legend>
+            <div class="seg">
+              <label><input type="radio" name="mode" value="vs" checked> 나 vs 엔진</label>
+              <label><input type="radio" name="mode" value="ee"> 엔진 vs 엔진</label>
+              <label><input type="radio" name="mode" value="2p"> 2인 / 검토</label>
+            </div>
+          </fieldset>
+          <div class="row2">
+            <div><label for="side">내 진영</label>
+              <select id="side"><option value="c">초 (선수)</option><option value="h">한 (후수)</option></select></div>
+            <div><label for="level">엔진 수준</label>
+              <select id="level">
+                <option value="1">입문</option><option value="2">초급</option><option value="3">중급</option>
+                <option value="4">고급 (1초)</option><option value="5" selected>최강</option></select></div>
+          </div>
+          <div class="row2">
+            <div><label for="ttime">최강 생각 시간</label>
+              <select id="ttime"><option value="2">2초</option><option value="5" selected>5초</option><option value="10">10초</option><option value="20">20초</option><option value="40">40초</option></select></div>
+            <div></div>
+          </div>
+          <div class="row2">
+            <div><label for="setC">초 상차림</label>
+              <select id="setC"><option>마상상마</option><option>상마마상</option><option>마상마상</option><option>상마상마</option></select></div>
+            <div><label for="setH">한 상차림</label>
+              <select id="setH"><option>마상상마</option><option>상마마상</option><option>마상마상</option><option>상마상마</option></select></div>
+          </div>
+          <span class="hint">상차림은 각자 자기 진영 왼쪽부터 읽습니다. 생각 시간이 길수록 더 깊이 읽습니다.</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" type="submit">대국 시작</button><button id="editOpen" type="button">기물 빼고 시작…</button></div>
+        </form>
+      </details>
+    </section>
+    <section class="card">
+      <div class="log-head"><span class="lbl">기보</span><button id="copyLog" type="button">기보 복사</button></div>
+      <ol class="moves" id="moves"></ol>
+    </section>
+  </aside>
+</div>
+
+<script type="text/plain" id="engine-src">/* 장기 엔진 — Stockfish 탐색 구조를 장기에 맞게 이식
+   반복 심화 + 애스피레이션 윈도, PVS, 트랜스포지션 테이블, 레이저링, 리버스 퓨틸리티,
+   널무브(=한수쉼), 내부 반복 감소(IIR), 늦은 수 가지치기, 퓨틸리티 가지치기,
+   로그식 LMR, 킬러/카운터무브/히스토리(감쇠 갱신), 정지 탐색(델타 가지치기), 장군 연장 */
+var JanggiEngine = function () {
+  "use strict";
+  var W = 15, OFF = 64, K = 1, A = 2, E = 3, H = 4, R = 5, C = 6, P = 7;
+  var MATE = 30000, INF = 32000, MAXPLY = 64, MB = 220;
+  var VAL = [0, 0, 300, 300, 520, 1300, 700, 200];
+  var ORD = [0, 50, 3, 3, 5, 13, 7, 2];
+  var ORTH = [-W, W, -1, 1];
+  var PERP = [[-1, 1], [-1, 1], [-W, W], [-W, W]];
+
+  var board = new Int32Array(240);
+  var pal = new Uint8Array(240), dpt = new Uint8Array(240);
+  var BSQ = new Int32Array(90), IDX = new Int32Array(240).fill(-1);
+  var ROW = new Int32Array(240), COL = new Int32Array(240);
+  var diagDirs = [];
+  var sq = function (r, c) { return (r + 3) * W + (c + 3); };
+  for (var s0 = 0; s0 < 240; s0++) diagDirs.push([]);
+  for (var r = 0; r < 10; r++) for (var c = 0; c < 9; c++) {
+    var s = sq(r, c);
+    BSQ[r * 9 + c] = s; IDX[s] = r * 9 + c; ROW[s] = r; COL[s] = c;
+    if (c >= 3 && c <= 5 && (r <= 2 || r >= 7)) {
+      pal[s] = r >= 7 ? 1 : 2;           // 1 = 초 궁성(아래), 2 = 한 궁성(위)
+      dpt[s] = (r === 1 || r === 8) ? (c === 4 ? 1 : 0) : (c !== 4 ? 1 : 0);
+    }
+  }
+  [[-W - 1], [-W + 1], [W - 1], [W + 1]].forEach(function () {});
+  for (var i0 = 0; i0 < 90; i0++) {
+    var s1 = BSQ[i0];
+    if (!dpt[s1]) continue;
+    [-W - 1, -W + 1, W - 1, W + 1].forEach(function (d) { if (dpt[s1 + d]) diagDirs[s1].push(d); });
+  }
+
+  /* 위치 점수표 (자기 진영 기준 rr = 0 자기 끝줄 ~ 9 상대 끝줄) */
+  var PST = new Int32Array(16 * 240);
+  function pstVal(t, rr, c) {
+    var cd = Math.abs(c - 4);
+    switch (t) {
+      case P: {
+        var v = 0;
+        if (rr >= 4) v += Math.min(rr - 3, 4) * 14;
+        if (rr >= 7 && c >= 3 && c <= 5) v += 30;
+        if (rr === 9) v -= 25;
+        if (cd <= 2) v += 6;
+        return v;
+      }
+      case H: return -cd * 7 - Math.abs(rr - 4) * 5 - (c === 0 || c === 8 ? 18 : 0) + (rr >= 3 && rr <= 6 ? 10 : 0);
+      case E: return -cd * 4 + (rr >= 2 && rr <= 5 ? 8 : 0);
+      case R: return (rr >= 5 ? 14 : 0) + (rr === 7 ? 10 : 0) - (cd === 4 && rr <= 1 ? 6 : 0);
+      case C: return (c === 4 ? 12 : 0) + (rr <= 2 ? 8 : 0) + (rr >= 7 && c >= 3 && c <= 5 ? 10 : 0);
+      case K: return (c === 4 ? 12 : 0) + (rr === 1 ? 10 : 0) - (rr === 2 ? 8 : 0);
+      case A: return (rr === 1 && c === 4) ? 10 : 0;
+    }
+    return 0;
+  }
+  for (var side0 = 0; side0 < 2; side0++)
+    for (var t0 = 1; t0 <= 7; t0++)
+      for (var i1 = 0; i1 < 90; i1++) {
+        var s2 = BSQ[i1], rr = side0 === 0 ? 9 - ROW[s2] : ROW[s2];
+        PST[(side0 * 8 + t0) * 240 + s2] = pstVal(t0, rr, COL[s2]);
+      }
+
+  /* Zobrist */
+  var seed = 0x2f6b9c1d;
+  function rnd() { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return seed | 0; }
+  var Z1 = new Int32Array(16 * 240), Z2 = new Int32Array(16 * 240);
+  for (var z = 0; z < Z1.length; z++) { Z1[z] = rnd(); Z2[z] = rnd(); }
+  var SIDE1 = rnd(), SIDE2 = rnd();
+
+  /* 상태 */
+  var side = 0, h1 = 0, h2 = 0, total = 0;
+  var kingSq = new Int32Array(2), mat = new Int32Array(2), cannons = new Int32Array(2), majors = new Int32Array(2);
+  var STK = 2048, sp = 0;
+  var uMove = new Int32Array(STK), uCap = new Int32Array(STK), uH1 = new Int32Array(STK), uH2 = new Int32Array(STK),
+      uM0 = new Int32Array(STK), uM1 = new Int32Array(STK);
+  var rep = new Int32Array(STK + 1), rp = 0;
+
+  function setup(cells, stm) {
+    board.fill(OFF);
+    for (var i = 0; i < 90; i++) board[BSQ[i]] = 0;
+    h1 = h2 = 0; mat[0] = mat[1] = 0; cannons[0] = cannons[1] = 0; majors[0] = majors[1] = 0; total = 0;
+    var map = { K: K, A: A, E: E, H: H, R: R, C: C, P: P };
+    for (var j = 0; j < 90; j++) {
+      var cell = cells[j];
+      if (!cell) continue;
+      var sd = cell[0] === "c" ? 0 : 1, t = map[cell[1]], p = sd * 8 + t, s = BSQ[j];
+      board[s] = p; h1 ^= Z1[p * 240 + s]; h2 ^= Z2[p * 240 + s];
+      mat[sd] += VAL[t] + PST[p * 240 + s]; total++;
+      if (t === K) kingSq[sd] = s;
+      if (t === C) cannons[sd]++;
+      if (t === R || t === C || t === H) majors[sd]++;
+    }
+    side = stm === "h" ? 1 : 0;
+    if (side) { h1 ^= SIDE1; h2 ^= SIDE2; }
+    sp = 0; rp = 0; rep[rp++] = h1;
+  }
+
+  function make(m) {
+    var f = m & 255, t = (m >> 8) & 255;
+    uMove[sp] = m; uH1[sp] = h1; uH2[sp] = h2; uM0[sp] = mat[0]; uM1[sp] = mat[1]; uCap[sp] = 0;
+    if (f !== t) {
+      var p = board[f], cap = board[t];
+      h1 ^= Z1[p * 240 + f] ^ Z1[p * 240 + t]; h2 ^= Z2[p * 240 + f] ^ Z2[p * 240 + t];
+      if (cap) {
+        var ct = cap & 7, cs = cap >> 3;
+        h1 ^= Z1[cap * 240 + t]; h2 ^= Z2[cap * 240 + t];
+        mat[cs] -= VAL[ct] + PST[cap * 240 + t]; total--;
+        if (ct === C) cannons[cs]--;
+        if (ct === R || ct === C || ct === H) majors[cs]--;
+      }
+      uCap[sp] = cap;
+      mat[side] += PST[p * 240 + t] - PST[p * 240 + f];
+      if ((p & 7) === K) kingSq[side] = t;
+      board[t] = p; board[f] = 0;
+    }
+    sp++;
+    side ^= 1; h1 ^= SIDE1; h2 ^= SIDE2;
+    rep[rp++] = h1;
+  }
+  function unmake() {
+    sp--; rp--;
+    var m = uMove[sp], f = m & 255, t = (m >> 8) & 255;
+    side ^= 1; h1 = uH1[sp]; h2 = uH2[sp]; mat[0] = uM0[sp]; mat[1] = uM1[sp];
+    if (f !== t) {
+      var p = board[t], cap = uCap[sp];
+      board[f] = p; board[t] = cap;
+      if ((p & 7) === K) kingSq[side] = f;
+      if (cap) {
+        var ct = cap & 7, cs = cap >> 3; total++;
+        if (ct === C) cannons[cs]++;
+        if (ct === R || ct === C || ct === H) majors[cs]++;
+      }
+    }
+  }
+
+  /* 수 생성 (가짜 합법수) */
+  function gen(buf, n, caps) {
+    var sd = side, own = sd + 1;
+    for (var i = 0; i < 90; i++) {
+      var s = BSQ[i], p = board[s];
+      if (!p || (p >> 3) !== sd) continue;
+      var t, q, k, d, dd;
+      switch (p & 7) {
+        case K: case A:
+          for (k = 0; k < 4; k++) {
+            t = s + ORTH[k]; if (pal[t] !== own) continue;
+            q = board[t]; if (q ? (q >> 3) === sd : caps) continue;
+            buf[n++] = s | (t << 8);
+          }
+          dd = diagDirs[s];
+          for (k = 0; k < dd.length; k++) {
+            t = s + dd[k]; if (pal[t] !== own) continue;
+            q = board[t]; if (q ? (q >> 3) === sd : caps) continue;
+            buf[n++] = s | (t << 8);
+          }
+          break;
+        case R:
+          for (k = 0; k < 4; k++) {
+            d = ORTH[k]; t = s + d;
+            while ((q = board[t]) === 0) { if (!caps) buf[n++] = s | (t << 8); t += d; }
+            if (q !== OFF && (q >> 3) !== sd) buf[n++] = s | (t << 8);
+          }
+          dd = diagDirs[s];
+          for (k = 0; k < dd.length; k++) {
+            d = dd[k]; t = s + d;
+            while (dpt[t] && board[t] === 0) { if (!caps) buf[n++] = s | (t << 8); t += d; }
+            if (dpt[t] && (board[t] >> 3) !== sd) buf[n++] = s | (t << 8);
+          }
+          break;
+        case C:
+          for (k = 0; k < 4; k++) {
+            d = ORTH[k]; t = s + d;
+            while (board[t] === 0) t += d;
+            q = board[t]; if (q === OFF || (q & 7) === C) continue;
+            t += d;
+            while ((q = board[t]) === 0) { if (!caps) buf[n++] = s | (t << 8); t += d; }
+            if (q !== OFF && (q >> 3) !== sd && (q & 7) !== C) buf[n++] = s | (t << 8);
+          }
+          dd = diagDirs[s];
+          for (k = 0; k < dd.length; k++) {
+            d = dd[k]; t = s + d;
+            while (dpt[t] && board[t] === 0) t += d;
+            if (!dpt[t] || (board[t] & 7) === C) continue;
+            t += d;
+            while (dpt[t] && board[t] === 0) { if (!caps) buf[n++] = s | (t << 8); t += d; }
+            if (dpt[t]) { q = board[t]; if ((q >> 3) !== sd && (q & 7) !== C) buf[n++] = s | (t << 8); }
+          }
+          break;
+        case H:
+          for (k = 0; k < 4; k++) {
+            d = ORTH[k]; if (board[s + d] !== 0) continue;
+            for (var j = 0; j < 2; j++) {
+              t = s + 2 * d + PERP[k][j]; q = board[t];
+              if (q === OFF || (q ? (q >> 3) === sd : caps)) continue;
+              buf[n++] = s | (t << 8);
+            }
+          }
+          break;
+        case E:
+          for (k = 0; k < 4; k++) {
+            d = ORTH[k]; if (board[s + d] !== 0) continue;
+            for (var j2 = 0; j2 < 2; j2++) {
+              var pp = PERP[k][j2];
+              if (board[s + 2 * d + pp] !== 0) continue;
+              t = s + 3 * d + 2 * pp; q = board[t];
+              if (q === OFF || (q ? (q >> 3) === sd : caps)) continue;
+              buf[n++] = s | (t << 8);
+            }
+          }
+          break;
+        case P: {
+          var fw = sd ? W : -W;
+          var tg0 = s + fw, tg1 = s - 1, tg2 = s + 1;
+          for (k = 0; k < 3; k++) {
+            t = k === 0 ? tg0 : k === 1 ? tg1 : tg2; q = board[t];
+            if (q === OFF || (q ? (q >> 3) === sd : caps)) continue;
+            buf[n++] = s | (t << 8);
+          }
+          if (dpt[s]) for (k = -1; k <= 1; k += 2) {
+            t = s + fw + k; if (!dpt[t]) continue; q = board[t];
+            if (q ? (q >> 3) === sd : caps) continue;
+            buf[n++] = s | (t << 8);
+          }
+          break;
+        }
+      }
+    }
+    return n;
+  }
+
+  /* s 칸이 by 쪽에게 공격받는가 */
+  function attacked(s, by) {
+    var Rb = by * 8 + R, Cb = by * 8 + C, Hb = by * 8 + H, Eb = by * 8 + E, Pb = by * 8 + P;
+    var k, d, t, q, dd;
+    for (k = 0; k < 4; k++) {
+      d = ORTH[k]; t = s + d;
+      while (board[t] === 0) t += d;
+      q = board[t];
+      if (q === Rb) return true;
+      if (q !== OFF && (q & 7) !== C) {
+        t += d; while (board[t] === 0) t += d;
+        if (board[t] === Cb) return true;
+      }
+    }
+    if (dpt[s]) {
+      dd = diagDirs[s];
+      for (k = 0; k < dd.length; k++) {
+        d = dd[k]; t = s + d;
+        while (dpt[t] && board[t] === 0) t += d;
+        if (!dpt[t]) continue;
+        q = board[t];
+        if (q === Rb) return true;
+        if ((q & 7) !== C) {
+          t += d; while (dpt[t] && board[t] === 0) t += d;
+          if (dpt[t] && board[t] === Cb) return true;
+        }
+      }
+    }
+    for (k = 0; k < 4; k++) {
+      d = ORTH[k];
+      for (var j = 0; j < 2; j++) {
+        var p = PERP[k][j], h = s - 2 * d - p;
+        if (board[h] === Hb && board[h + d] === 0) return true;
+        var e = s - 3 * d - 2 * p;
+        if (board[e] === Eb && board[e + d] === 0 && board[e + 2 * d + p] === 0) return true;
+      }
+    }
+    var fb = by ? W : -W;
+    if (board[s - fb] === Pb || board[s - 1] === Pb || board[s + 1] === Pb) return true;
+    if (dpt[s]) for (k = -1; k <= 1; k += 2) { var a = s - fb - k; if (dpt[a] && board[a] === Pb) return true; }
+    return false;
+  }
+  function inCheck() { return attacked(kingSq[side], side ^ 1); }
+
+  /* 평가 (둘 차례 기준) */
+  function evaluate() {
+    var e = mat[side] - mat[side ^ 1];
+    var ph = 32 - total;
+    if (ph > 0) e -= (cannons[side] - cannons[side ^ 1]) * ph * 7;
+    // 궁 안전: 궁 주변 궁성 칸에 들어온 상대 기물
+    e -= palacePressure(side) - palacePressure(side ^ 1);
+    return e + 18;
+  }
+  function palacePressure(sd) {
+    var ks = kingSq[sd], v = 0, enemy = sd ^ 1, own = sd + 1;
+    for (var k = 0; k < 4; k++) {
+      var t = ks + ORTH[k];
+      if (pal[t] === own) { var q = board[t]; if (q && (q >> 3) === enemy) v += (q & 7) === R ? 40 : 25; }
+    }
+    // 궁과 같은 세로줄에 열린 상대 차
+    var d = sd ? W : -W, t2 = ks + d, cnt = 0;
+    while (board[t2] !== OFF) {
+      var q2 = board[t2];
+      if (q2) { if ((q2 >> 3) === enemy && (q2 & 7) === R && cnt === 0) v += 30; cnt++; if (cnt > 1) break; }
+      t2 += d;
+    }
+    return v;
+  }
+
+  /* 트랜스포지션 테이블 */
+  var TT_BITS = 20, TT_SIZE = 1 << TT_BITS, TT_MASK = TT_SIZE - 1;
+  var ttK = new Int32Array(TT_SIZE), ttM = new Int32Array(TT_SIZE), ttS = new Int16Array(TT_SIZE),
+      ttE = new Int16Array(TT_SIZE), ttD = new Int8Array(TT_SIZE), ttF = new Uint8Array(TT_SIZE), ttG = new Uint8Array(TT_SIZE);
+  var gen8 = 0;
+  var LOWER = 1, UPPER = 2, EXACT = 3;
+  function ttStore(depth, flag, score, ev, move, ply) {
+    var i = h1 & TT_MASK;
+    if (ttK[i] === h2 && ttG[i] === gen8 && ttD[i] > depth + 2 && flag !== EXACT) return;
+    if (score > MATE - 200) score += ply; else if (score < -MATE + 200) score -= ply;
+    if (!move && ttK[i] === h2) move = ttM[i];
+    ttK[i] = h2; ttM[i] = move; ttS[i] = score; ttE[i] = ev; ttD[i] = depth; ttF[i] = flag; ttG[i] = gen8;
+  }
+  function ttScore(i, ply) {
+    var s = ttS[i];
+    if (s > MATE - 200) return s - ply;
+    if (s < -MATE + 200) return s + ply;
+    return s;
+  }
+
+  /* 탐색 자료 */
+  var MOVES = new Int32Array(MAXPLY * MB), SC = new Int32Array(MAXPLY * MB);
+  var killers = new Int32Array(MAXPLY * 2), counter = new Int32Array(16 * 240);
+  var hist = new Int32Array(2 * 240 * 240);
+  var pvT = new Int32Array(MAXPLY * MAXPLY), pvL = new Int32Array(MAXPLY);
+  var stEval = new Int32Array(MAXPLY + 2), curMove = new Int32Array(MAXPLY + 2);
+  var LMR = [];
+  for (var ld = 0; ld < 64; ld++) { LMR.push([]); for (var lm = 0; lm < 64; lm++) LMR[ld].push(ld && lm ? Math.log(ld) * Math.log(lm) * 0.48 + 0.25 : 0); }
+  var nodes = 0, stopTime = 0, stopped = false, hardNodes = 0;
+  var rootAllow = null;   // 둘 수 있는 첫 수 제한 (동형반복 금지 등)
+
+  function checkTime() { if (Date.now() >= stopTime || (hardNodes && nodes >= hardNodes)) stopped = true; }
+
+  function histUpdate(m, bonus) {
+    var i = side * 57600 + (m & 255) * 240 + ((m >> 8) & 255);
+    hist[i] += bonus - hist[i] * Math.abs(bonus) / 16384;   // Stockfish식 감쇠 갱신
+  }
+
+  function scoreMoves(base, end, ttMove, ply) {
+    var k1 = killers[ply * 2], k2 = killers[ply * 2 + 1];
+    var prev = ply > 0 ? curMove[ply - 1] : 0, cm = 0;
+    if (prev) { var pt = (prev >> 8) & 255; cm = counter[board[pt] * 240 + pt]; }
+    for (var i = base; i < end; i++) {
+      var m = MOVES[i], t = (m >> 8) & 255, cap = board[t];
+      if (m === ttMove) SC[i] = 4000000;
+      else if (cap) SC[i] = 2000000 + ORD[cap & 7] * 64 - ORD[board[m & 255] & 7];
+      else if (m === k1) SC[i] = 1900000;
+      else if (m === k2) SC[i] = 1800000;
+      else if (m === cm) SC[i] = 1700000;
+      else SC[i] = hist[side * 57600 + (m & 255) * 240 + t];
+    }
+  }
+  function pick(i, end) {
+    var bi = i, bs = SC[i];
+    for (var j = i + 1; j < end; j++) if (SC[j] > bs) { bs = SC[j]; bi = j; }
+    if (bi !== i) { var tm = MOVES[i]; MOVES[i] = MOVES[bi]; MOVES[bi] = tm; var ts = SC[i]; SC[i] = SC[bi]; SC[bi] = ts; }
+    return MOVES[i];
+  }
+
+  function qsearch(alpha, beta, ply) {
+    nodes++;
+    if ((nodes & 2047) === 0) checkTime();
+    pvL[ply] = ply;
+    if (stopped) return 0;
+    var stand = evaluate();
+    if (ply >= MAXPLY - 1) return stand;
+    if (stand >= beta) return stand;
+    if (stand > alpha) alpha = stand;
+    var base = ply * MB, end = gen(MOVES, base, true);
+    scoreMoves(base, end, 0, ply);
+    var best = stand;
+    for (var i = base; i < end; i++) {
+      var m = pick(i, end), cap = board[(m >> 8) & 255];
+      if (stand + VAL[cap & 7] + 220 < alpha && (cap & 7) !== K) continue;   // 델타 가지치기
+      make(m);
+      if (attacked(kingSq[side ^ 1], side)) { unmake(); continue; }
+      var sc = -qsearch(-beta, -alpha, ply + 1);
+      unmake();
+      if (stopped) return 0;
+      if (sc > best) {
+        best = sc;
+        if (sc > alpha) { alpha = sc; if (sc >= beta) return sc; }
+      }
+    }
+    return best;
+  }
+
+  function search(depth, alpha, beta, ply, cutNode, allowNull) {
+    var pvNode = beta - alpha > 1, root = ply === 0;
+    pvL[ply] = ply;
+    if (!root) {
+      if ((++nodes & 2047) === 0) checkTime();
+      if (stopped) return 0;
+      for (var ri = rp - 3, lim = Math.max(0, rp - 60); ri >= lim; ri -= 2) if (rep[ri] === h1) return 0;
+      if (ply >= MAXPLY - 2) return evaluate();
+      // 메이트 거리 가지치기
+      var ma = Math.max(alpha, -MATE + ply), mb = Math.min(beta, MATE - ply - 1);
+      if (ma >= mb) return ma;
+    }
+    var check = inCheck();
+    if (check) depth++;                        // 장군 연장
+    if (depth <= 0) return qsearch(alpha, beta, ply);
+
+    var ti = h1 & TT_MASK, ttHit = ttK[ti] === h2, ttMove = ttHit ? ttM[ti] : 0, ttVal = 0;
+    if (ttHit) {
+      ttVal = ttScore(ti, ply);
+      if (!pvNode && ttD[ti] >= depth) {
+        var f = ttF[ti];
+        if (f === EXACT || (f === LOWER && ttVal >= beta) || (f === UPPER && ttVal <= alpha)) return ttVal;
+      }
+    }
+
+    var ev;
+    if (check) ev = stEval[ply] = -INF;
+    else {
+      ev = stEval[ply] = ttHit ? ttE[ti] : evaluate();
+      if (ttHit && ((ttF[ti] === LOWER && ttVal > ev) || (ttF[ti] === UPPER && ttVal < ev))) ev = ttVal;
+    }
+    var improving = !check && ply >= 2 && stEval[ply] > stEval[ply - 2];
+
+    if (!pvNode && !check) {
+      // 레이저링
+      if (depth <= 3 && ev < alpha - 400 * depth * depth) {
+        var rz = qsearch(alpha, beta, ply);
+        if (rz < alpha) return rz;
+      }
+      // 리버스 퓨틸리티 (자식 노드 퓨틸리티)
+      if (depth < 9 && ev - (90 - 30 * improving) * depth >= beta && Math.abs(beta) < MATE - 200)
+        return ((ev + beta) / 2) | 0;
+      // 널무브 = 한수쉼 (장기에서는 실제로 합법)
+      if (allowNull && cutNode && depth >= 3 && ev >= beta && majors[side] > 0) {
+        var Rn = 3 + ((depth / 3) | 0) + Math.min(((ev - beta) / 220) | 0, 3);
+        curMove[ply] = 0;
+        var nm = (kingSq[side]) | (kingSq[side] << 8);
+        make(nm);
+        var nv = -search(depth - Rn, -beta, -beta + 1, ply + 1, false, false);
+        unmake();
+        if (stopped) return 0;
+        if (nv >= beta && nv < MATE - 200) return nv;
+      }
+    }
+    // 내부 반복 감소 (IIR)
+    if (!ttMove && depth >= 4 && (pvNode || cutNode)) depth--;
+
+    var base = ply * MB, end = gen(MOVES, base, false);
+    scoreMoves(base, end, ttMove, ply);
+    var best = -INF, bestMove = 0, legal = 0, origAlpha = alpha, quietsTried = 0;
+    var lmpLimit = ((3 + depth * depth) / (improving ? 1 : 2)) | 0;
+
+    for (var i = base; i < end; i++) {
+      var m = pick(i, end), to = (m >> 8) & 255, capture = board[to] !== 0;
+      if (root && rootAllow && !rootAllow[IDX[m & 255] * 90 + IDX[to]]) continue;
+      var isKiller = m === killers[ply * 2] || m === killers[ply * 2 + 1];
+      // 얕은 깊이 가지치기 (Step 15)
+      if (!root && legal > 0 && !check && !capture && best > -MATE + 200 && m !== ttMove) {
+        if (quietsTried >= lmpLimit) continue;                       // 늦은 수 가지치기
+        var lmrD = Math.max(0, depth - 1 - Math.round(LMR[Math.min(depth, 63)][Math.min(legal, 63)]));
+        if (lmrD < 6 && ev + 140 + 120 * lmrD <= alpha) { quietsTried++; continue; }  // 부모 퓨틸리티
+      }
+      make(m);
+      if (attacked(kingSq[side ^ 1], side)) { unmake(); continue; }
+      legal++;
+      if (!capture) quietsTried++;
+      curMove[ply] = m;
+      var givesCheck = attacked(kingSq[side], side ^ 1);
+      var sc, nd = depth - 1;
+      if (legal === 1) sc = -search(nd, -beta, -alpha, ply + 1, !pvNode && !cutNode, true);
+      else {
+        var red = 0;
+        if (depth >= 3 && legal > 2 && !capture) {
+          red = LMR[Math.min(depth, 63)][Math.min(legal, 63)];
+          if (!pvNode) red += 0.5;
+          if (cutNode) red += 1;
+          if (!improving) red += 0.5;
+          if (isKiller) red -= 1;
+          if (givesCheck || check) red -= 1;
+          red -= hist[(side ^ 1) * 57600 + (m & 255) * 240 + to] / 8000;
+          red = Math.max(0, Math.min(nd - 1, Math.round(red)));
+        }
+        sc = -search(nd - red, -alpha - 1, -alpha, ply + 1, true, true);
+        if (sc > alpha && red > 0) sc = -search(nd, -alpha - 1, -alpha, ply + 1, !cutNode, true);
+        if (sc > alpha && sc < beta) sc = -search(nd, -beta, -alpha, ply + 1, false, true);
+      }
+      unmake();
+      if (stopped) return 0;
+      if (sc > best) {
+        best = sc; bestMove = m;
+        if (sc > alpha) {
+          alpha = sc;
+          var row = ply * MAXPLY, nrow = (ply + 1) * MAXPLY;
+          pvT[row + ply] = m;
+          for (var j = ply + 1; j < pvL[ply + 1]; j++) pvT[row + j] = pvT[nrow + j];
+          pvL[ply] = pvL[ply + 1] > ply + 1 ? pvL[ply + 1] : ply + 1;
+          if (sc >= beta) {
+            if (!capture) {
+              if (killers[ply * 2] !== m) { killers[ply * 2 + 1] = killers[ply * 2]; killers[ply * 2] = m; }
+              var bonus = Math.min(depth * depth * 16, 1600);
+              histUpdate(m, bonus);
+              for (var q = base; q < i; q++) {          // 실패한 조용한 수는 벌점
+                var mq = MOVES[q];
+                if (!board[(mq >> 8) & 255]) histUpdate(mq, -bonus);
+              }
+              if (ply > 0 && curMove[ply - 1]) {
+                var pt = (curMove[ply - 1] >> 8) & 255;
+                counter[board[pt] * 240 + pt] = m;
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+    if (legal === 0) return check ? -MATE + ply : 0;
+    ttStore(depth, best >= beta ? LOWER : best > origAlpha ? EXACT : UPPER, best, check ? 0 : stEval[ply], bestMove, ply);
+    return best;
+  }
+
+  /* 외부 API */
+  function legalMoves() {
+    var buf = new Int32Array(MB), n = gen(buf, 0, false), out = [];
+    for (var i = 0; i < n; i++) {
+      var m = buf[i]; make(m);
+      var ok = !attacked(kingSq[side ^ 1], side); unmake();
+      if (ok) out.push([IDX[m & 255], IDX[(m >> 8) & 255]]);
+    }
+    if (!inCheck()) out.push([IDX[kingSq[side]], IDX[kingSq[side]]]);  // 한수쉼
+    return out;
+  }
+  function play(f, t) { make(BSQ[f] | (BSQ[t] << 8)); }
+
+  function think(opt, onInfo) {
+    var start = Date.now();
+    stopTime = start + (opt.time || 1000); hardNodes = opt.nodes || 0;
+    nodes = 0; stopped = false; gen8 = (gen8 + 1) & 255;
+    killers.fill(0);
+    for (var hi = 0; hi < hist.length; hi++) hist[hi] = hist[hi] >> 1;
+    var buf = new Int32Array(MB), n = gen(buf, 0, false), roots = [];
+    for (var i = 0; i < n; i++) { make(buf[i]); if (!attacked(kingSq[side ^ 1], side)) roots.push(buf[i]); unmake(); }
+    if (!roots.length) {
+      if (inCheck()) return { best: null, score: -MATE };
+      return { best: [IDX[kingSq[side]], IDX[kingSq[side]]], score: 0 };
+    }
+    rootAllow = null;
+    if (opt.searchmoves && opt.searchmoves.length) {
+      var allow = {};
+      opt.searchmoves.forEach(function (sm) { allow[sm[0] * 90 + sm[1]] = 1; });
+      var fr = roots.filter(function (rm) { return allow[IDX[rm & 255] * 90 + IDX[(rm >> 8) & 255]]; });
+      if (fr.length) { roots = fr; rootAllow = allow; }
+    }
+    var maxDepth = opt.depth || 60;
+    if (opt.noise) {   // 약한 수준: 얕은 탐색 + 무작위성
+      var bs = -INF, bm = roots[0];
+      for (var r2 = 0; r2 < roots.length; r2++) {
+        make(roots[r2]);
+        var v = -search(maxDepth - 1, -INF, INF, 1, false, true) + Math.random() * opt.noise;
+        unmake();
+        if (v > bs) { bs = v; bm = roots[r2]; }
+      }
+      return { best: [IDX[bm & 255], IDX[(bm >> 8) & 255]], score: bs | 0 };
+    }
+    var best = roots[0], bestScore = 0, prev = 0, lastPv = [];
+    for (var d = 1; d <= maxDepth; d++) {
+      var delta = 30, a = -INF, b = INF;
+      if (d >= 4) { a = Math.max(prev - delta, -INF); b = Math.min(prev + delta, INF); }
+      var sc;
+      while (true) {
+        sc = search(d, a, b, 0, false, false);
+        if (stopped) break;
+        if (sc <= a) { b = ((a + b) / 2) | 0; a = Math.max(sc - delta, -INF); }
+        else if (sc >= b) { b = Math.min(sc + delta, INF); }
+        else break;
+        delta += delta >> 1;
+      }
+      if (stopped) {
+        if (pvL[0] > 0 && pvT[0] && d > 1 && pvT[0] !== best) { /* 미완 반복의 결과는 버림 */ }
+        break;
+      }
+      prev = sc; best = pvT[0]; bestScore = sc;
+      lastPv = [];
+      for (var j = 0; j < pvL[0]; j++) { var pm = pvT[j]; lastPv.push([IDX[pm & 255], IDX[(pm >> 8) & 255]]); }
+      var el = Date.now() - start;
+      if (onInfo) onInfo({ depth: d, score: sc, pv: lastPv, nodes: nodes, time: el, nps: Math.round(nodes * 1000 / Math.max(1, el)) });
+      if (Math.abs(sc) > MATE - 200 && d >= (MATE - Math.abs(sc)) + 2) break;
+      if (!opt.infinite && el > (opt.time || 1000) * 0.55) break;
+    }
+    return { best: [IDX[best & 255], IDX[(best >> 8) & 255]], score: bestScore, pv: lastPv };
+  }
+
+  return {
+    setup: setup, play: play, legalMoves: legalMoves, inCheck: inCheck, think: think,
+    perft: function perft(d) {
+      if (d === 0) return 1;
+      var buf = new Int32Array(MB), n = gen(buf, 0, false), cnt = 0;
+      for (var i = 0; i < n; i++) { make(buf[i]); if (!attacked(kingSq[side ^ 1], side)) cnt += perft(d - 1); unmake(); }
+      return cnt;
+    },
+    MATE: MATE
+  };
+};
+</script>
+<script>
+(()=>{
+const SRC=document.getElementById('engine-src').textContent;
+const fmtMB=h=>h>=1024?`${+(h/1024).toFixed(h%1024?1:0)}GB`:`${h}MB`;
+const JanggiEngine=new Function(SRC+';return JanggiEngine;')();
+const RULES=JanggiEngine();
+const S=60,M=40;
+const VAL={K:0,R:13,C:7,H:5,E:3,A:3,P:2};
+const HANJA={c:{K:'楚',R:'車',C:'包',H:'馬',E:'象',A:'士',P:'卒'},h:{K:'漢',R:'車',C:'包',H:'馬',E:'象',A:'士',P:'兵'}};
+const HANGUL={c:{K:'초',R:'차',C:'포',H:'마',E:'상',A:'사',P:'졸'},h:{K:'한',R:'차',C:'포',H:'마',E:'상',A:'사',P:'병'}};
+const NAMEK={K:'궁',R:'차',C:'포',H:'마',E:'상',A:'사'};
+const NAME={c:'초',h:'한'};
+const opp=s=>s==='c'?'h':'c';
+const LEVELS={1:{depth:1,noise:300},2:{depth:2,noise:120},3:{depth:3,noise:35},4:{time:1000}};
+const store={get(k,d){try{const v=localStorage.getItem('janggi-'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+             set(k,v){try{localStorage.setItem('janggi-'+k,JSON.stringify(v));}catch(e){}}};
+
+function startCells(cArr,hArr){
+  const b=Array(90).fill(null),put=(r,c,p)=>{b[r*9+c]=p;};
+  const back=(s,row,arr)=>{put(row,0,s+'R');put(row,8,s+'R');put(row,3,s+'A');put(row,5,s+'A');
+    const cols=s==='c'?[1,2,6,7]:[7,6,2,1];[...arr].forEach((ch,k)=>put(row,cols[k],s+(ch==='마'?'H':'E')));};
+  back('c',9,cArr);back('h',0,hArr);
+  put(8,4,'cK');put(1,4,'hK');put(7,1,'cC');put(7,7,'cC');put(2,1,'hC');put(2,7,'hC');
+  for(const c of[0,2,4,6,8]){put(6,c,'cP');put(3,c,'hP');}
+  return b;
+}
+const isPass=m=>m[0]===m[1];
+function applyCells(b,m){const n=b.slice();if(!isPass(m)){n[m[1]]=n[m[0]];n[m[0]]=null;}return n;}
+function notate(b,m){
+  if(isPass(m))return '한수쉼';
+  const p=b[m[0]],cap=b[m[1]],rc=i=>`${((i/9|0)+1)%10}${i%9+1}`;
+  const nm=p[1]==='P'?(p[0]==='c'?'졸':'병'):NAMEK[p[1]];
+  let s=`${rc(m[0])}${nm}${rc(m[1])}`;
+  if(cap)s+=`(${cap[1]==='P'?(cap[0]==='c'?'졸':'병'):NAMEK[cap[1]]}잡음)`;
+  return s;
+}
+
+/* ---------- 상태 ---------- */
+let st, useHanja=store.get('hanja',true);
+const defaultCfg={mode:'vs',human:'c',level:5,ttime:5,setC:'마상상마',setH:'마상상마'};
+function cellsAt(n){let b=st.start;for(let k=0;k<n;k++)b=applyCells(b,st.moves[k]);return b;}
+function cells(){return cellsAt(st.moves.length);}
+const turnOf=n=>{const s0=(st&&st.startSide)||'c';return n%2===0?s0:opp(s0);};
+
+function newGame(cfg){
+  stopSearch();
+  const cust=cfg.custom&&cfg.custom.cells&&cfg.custom.cells.length===90?cfg.custom:null;
+  st={cfg,start:cust?cust.cells.slice():startCells(cfg.setC,cfg.setH),startSide:cust?cust.side:'c',moves:[],sel:-1,targets:[],over:null,info:null,arrow:null,
+      flip:cfg.mode==='vs'&&cfg.human==='h'};
+  store.set('cfg',cfg);
+  positionChanged();
+}
+function positionChanged(){
+  stopSearch();
+  RULES.setup(st.start,st.startSide);for(const m of st.moves)RULES.play(m[0],m[1]);
+  st.turn=turnOf(st.moves.length);
+  st.legal=RULES.legalMoves();
+  st.check=RULES.inCheck();
+  // 카카오 규칙: 동형반복 3수 금지
+  st.caps=capsList();
+  {const b=cells();const allowed=st.legal.filter(m=>!repBlocked(b,st.caps,m));
+   st.blocked=st.legal.length-allowed.length;if(allowed.length)st.legal=allowed;}
+  st.sel=-1;st.targets=[];st.arrow=null;st.info=st.keepInfo||null;st.keepInfo=null;
+  if(!st.over){
+    const real=st.legal.filter(m=>!isPass(m));
+    if(!real.length&&st.check)st.over={w:opp(st.turn),why:'외통'};
+    else if(st.moves.length>=2&&isPass(st.moves.at(-1))&&isPass(st.moves.at(-2))){
+      const sc=material();st.over={w:sc.c>sc.h?'c':'h',why:'점수'};
+    }
+    else if(st.moves.length>=MOVE_LIMIT&&!st.caps.at(-1)&&!st.check){
+      // 200수 이후: 장군이나 잡는 수가 이어지는 동안만 연장, 끊기면 점수 판정
+      const sc=material();st.over={w:sc.c>sc.h?'c':'h',why:'수제한'};
+    }
+  }
+  render();
+  schedule();
+}
+const MOVE_LIMIT=200;
+function capsList(){const out=[];let b=st.start;for(const m of st.moves){out.push(!isPass(m)&&!!b[m[1]]);b=applyCells(b,m);}return out;}
+function repBlocked(b,caps,m){
+  if(isPass(m)||st.moves.length<4)return false;
+  const p=b[m[0]];if(!p||p[1]==='K'||p[1]==='A'||b[m[1]])return false;
+  const a=st.moves.at(-4),c=st.moves.at(-2);
+  if(a[0]!==m[0]||a[1]!==m[1]||c[0]!==m[1]||c[1]!==m[0])return false;
+  return !caps.slice(-4).some(x=>x);
+}
+let edit=null;
+function formCfg(){const f=$('form');return{mode:f.mode.value,human:$('side').value,level:+$('level').value,ttime:+$('ttime').value,setC:$('setC').value,setH:$('setH').value};}
+function openEdit(){
+  stopSearch();
+  const c=formCfg(),orig=startCells(c.setC,c.setH);
+  edit={orig,cells:orig.slice(),cfg:c};$('editSide').value='c';
+  $('setup').open=false;render();$('editBar').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function renderEditBar(){
+  const bar=$('editBar');if(!bar)return;bar.hidden=!edit;if(!edit)return;
+  const rm=edit.orig.filter((p,i)=>p&&!edit.cells[i]);
+  const sc={c:0,h:1.5};for(const p of edit.cells)if(p)sc[p[0]]+=VAL[p[1]];
+  $('editInfo').textContent=rm.length?`뺀 기물 ${rm.length}개 · 점수 초 ${sc.c} : 한 ${sc.h}`:'아직 뺀 기물이 없습니다';
+  $('turnText').textContent='판 편집 중';$('msg').textContent='빼고 싶은 기물을 판에서 누르세요.';
+}
+function startEdit(){
+  const side=$('editSide').value;
+  RULES.setup(edit.cells,opp(side));
+  if(RULES.inCheck()){$('editInfo').textContent='먼저 두는 쪽이 바로 상대 궁을 잡을 수 있는 배치라 시작할 수 없습니다. 기물을 더 조정하세요.';return;}
+  const cfg=Object.assign({},edit.cfg,{custom:{cells:edit.cells.slice(),side}});
+  edit=null;newGame(cfg);
+}
+function material(){const sc={c:0,h:1.5};for(const p of cells())if(p)sc[p[0]]+=VAL[p[1]];return sc;}
+const engineTurn=()=>!st.over&&(st.cfg.mode==='ee'||(st.cfg.mode==='vs'&&st.turn!==st.cfg.human));
+
+/* ---------- 엔진 (웹 워커) ---------- */
+let worker=null,job=null,jobId=0,workerOK=true,REMOTE=null;
+const FILES='abcdefghi';
+const toUci=m=>{const q=i=>FILES[i%9]+(10-((i/9)|0));return q(m[0])+q(m[1]);};
+function fromUci(u){const x=/^([a-i])(\d+)([a-i])(\d+)/.exec(u||'');if(!x)return[-1,-1];const ix=(f,r)=>(10-r)*9+FILES.indexOf(f);return[ix(x[1],+x[2]),ix(x[3],+x[4])];}
+function fenOf(b,side){const L={K:'k',A:'a',E:'b',H:'n',R:'r',C:'c',P:'p'},rows=[];
+  for(let r=0;r<10;r++){let s='',e=0;for(let c=0;c<9;c++){const p=b[r*9+c];if(!p){e++;continue;}if(e){s+=e;e=0;}const ch=L[p[1]];s+=p[0]==='c'?ch.toUpperCase():ch;}if(e)s+=e;rows.push(s);}
+  return rows.join('/')+(side==='h'?' b':' w')+' - - 0 1';}
+async function detectRemote(){
+  if(!/^(127\.0\.0\.1|localhost)$/.test(location.hostname))return;
+  try{const ctl=new AbortController();setTimeout(()=>ctl.abort(),2000);
+    const r=await fetch('/api/hello',{signal:ctl.signal});if(r.ok){const j=await r.json();if(j.ok)REMOTE=j;}}catch(e){}
+  setEngineLabel();
+}
+function setEngineLabel(){
+  if(REMOTE)document.getElementById('engineName').textContent=REMOTE.device==='cpu'?`연결 엔진: ${REMOTE.name} · CPU ${REMOTE.threads}스레드${REMOTE.threads>=REMOTE.cpus?' 전부':''} · 해시 ${fmtMB(REMOTE.hash)}${REMOTE.nnue?' · 장기 NNUE':''}${REMOTE.variant==='janggimodern'?' · 카카오 규칙':''}`:`연결 엔진: ${REMOTE.name} · 신경망 + MCTS · ${REMOTE.device==='cuda'?'GPU(CUDA)':'CPU(GPU 없음)'}`;
+}
+const api=(p,b)=>fetch(p,b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:undefined).then(r=>r.json());
+function remoteGo(kind){
+  const c=st.cfg,j=job,body={fen:fenOf(st.start,st.startSide),moves:st.moves.map(toUci)};
+  if(st.blocked)body.searchmoves=st.legal.map(toUci);
+  if(kind==='analyze')body.infinite=true;
+  else if(kind==='hint')body.movetime=2500;
+  else if(c.mode==='vs'&&c.level<=3){body.movetime=[300,600,1000][c.level-1];body.skill=[0,5,11][c.level-1];}
+  else if(c.mode==='vs'&&c.level===4)body.movetime=1000;
+  else body.movetime=c.ttime*1000;
+  api('/api/go',body).then(r=>{j.rid=r.id;if(job!==j){api('/api/stop',{id:r.id});return;}pollRemote(j);}).catch(()=>{});
+}
+function pollRemote(j){
+  if(job!==j)return;
+  api('/api/poll?id='+j.rid).then(d=>{
+    if(job!==j||d.stale)return;
+    const i=d.info;
+    if(i&&i.pv){const score=i.mate!==undefined?(i.mate>0?30000-(2*i.mate-1):-(30000+2*i.mate)):(i.cp||0);
+      onEngine({type:'info',id:j.id,info:{depth:i.depth||0,score,pv:i.pv.map(fromUci),nodes:i.nodes||0,nps:i.nps||0,time:i.time_ms||0}});}
+    if(d.done){let best=d.best&&d.best!=='(none)'?fromUci(d.best):null;
+      if(best&&best[0]<0)best=st.legal.find(isPass)||null;
+      onEngine({type:'done',id:j.id,res:{best}});return;}
+    setTimeout(()=>pollRemote(j),150);
+  }).catch(()=>setTimeout(()=>pollRemote(j),500));
+}
+const WORKER_SRC=SRC+`
+var E=JanggiEngine();
+onmessage=function(ev){var d=ev.data;E.setup(d.start,d.side||'c');for(var i=0;i<d.moves.length;i++)E.play(d.moves[i][0],d.moves[i][1]);
+var r=E.think(d.opt,function(info){postMessage({type:'info',id:d.id,info:info});});
+postMessage({type:'done',id:d.id,res:r});};`;
+function makeWorker(){
+  try{
+    const url=URL.createObjectURL(new Blob([WORKER_SRC],{type:'text/javascript'}));
+    worker=new Worker(url);
+    worker.onmessage=e=>onEngine(e.data);
+    worker.onerror=()=>{workerOK=false;worker=null;};
+  }catch(e){workerOK=false;worker=null;}
+}
+let FALLBACK=null;
+function startSearch(kind){
+  stopSearch();
+  const c=st.cfg;let opt;
+  if(kind==='move'){
+    const lv=c.mode==='ee'?{time:c.ttime*1000}:(LEVELS[c.level]||{time:c.ttime*1000});
+    opt=Object.assign({},lv);
+    if(st.blocked)opt.searchmoves=st.legal;
+  }else if(kind==='hint')opt={time:2500};
+  else opt={time:3600e3,infinite:true};
+  job={id:++jobId,kind,ply:st.moves.length,best:null};
+  if(REMOTE){remoteGo(kind);render();return;}
+  const msg={id:job.id,start:st.start,side:st.startSide,moves:st.moves,opt};
+  if(workerOK&&!worker)makeWorker();
+  if(workerOK&&worker){worker.postMessage(msg);}
+  else{ // 워커를 못 쓰는 환경: 화면이 잠깐 멈춤
+    if(kind==='analyze'){job=null;return;}
+    if(!FALLBACK)FALLBACK=JanggiEngine();
+    const id=job.id;
+    setTimeout(()=>{FALLBACK.setup(st.start,st.startSide);for(const m of st.moves)FALLBACK.play(m[0],m[1]);
+      const r=FALLBACK.think(Object.assign({},opt,{time:Math.min(opt.time||1500,3000)}),info=>onEngine({type:'info',id,info}));
+      onEngine({type:'done',id,res:r});},30);
+  }
+  render();
+}
+function stopSearch(){
+  if(job&&REMOTE&&job.rid)api('/api/stop',{id:job.rid}).catch(()=>{});
+  if(job&&worker){worker.terminate();worker=null;}
+  job=null;
+}
+function schedule(){
+  if(st.over)return;
+  if(engineTurn())startSearch('move');
+  else if(document.getElementById('analyze').checked)startSearch('analyze');
+}
+function onEngine(d){
+  if(!job||d.id!==job.id)return;
+  if(d.type==='info'){
+    const sign=turnOf(job.ply)==='c'?1:-1;
+    st.info=Object.assign({},d.info,{choScore:d.info.score*sign});
+    if(d.info.pv&&d.info.pv.length){job.best=d.info.pv[0];if(job.kind==='analyze')st.arrow=d.info.pv[0];}
+    renderEngine();drawArrowOnly();
+    return;
+  }
+  const k=job;job=null;
+  if(k.ply!==st.moves.length)return;
+  if(k.kind==='move'){
+    if(st.info&&st.info.pv.length>1)st.keepInfo=Object.assign({},st.info,{pv:st.info.pv.slice(1),stale:true});
+    if(d.res.best)doMove(d.res.best,true);
+    else{st.over={w:opp(st.turn),why:'외통'};render();}
+  }else if(k.kind==='hint'){st.arrow=d.res.best;render();}
+}
+function moveNow(){
+  if(job&&job.kind==='move'&&job.best){const b=job.best;stopSearch();doMove(b,true);}
+}
+
+/* ---------- 진행 ---------- */
+function doMove(m,trust){
+  if(!trust&&!st.legal.some(x=>x[0]===m[0]&&x[1]===m[1]))return;
+  st.lastWasCheck=st.check;st.moves.push(m);positionChanged();
+}
+function undo(){
+  if(!st.moves.length)return;
+  stopSearch();
+  st.moves.pop();
+  if(st.cfg.mode==='vs')while(st.moves.length&&turnOf(st.moves.length)!==st.cfg.human)st.moves.pop();
+  st.over=null;st.lastWasCheck=false;positionChanged();
+}
+
+/* ---------- 그리기 ---------- */
+const svg=document.getElementById('board');
+const xy=i=>{let r=(i/9)|0,c=i%9;if(st.flip){r=9-r;c=8-c;}return[M+c*S,M+r*S];};
+function octagon(cx,cy,R){const p=[];for(let k=0;k<8;k++){const a=Math.PI/8+k*Math.PI/4;p.push((cx+R*Math.cos(a)).toFixed(1)+','+(cy+R*Math.sin(a)).toFixed(1));}return p.join(' ');}
+function pieceSVG(p,cx,cy){
+  const t=p[1],s=p[0],R=t==='K'?28:(t==='A'||t==='P')?19:24,col=s==='c'?'#13614f':'#ad2a1f';
+  const ch=(useHanja?HANJA:HANGUL)[s][t],fs=R*(useHanja?1.12:1);
+  return `<polygon points="${octagon(cx+1.5,cy+2.5,R)}" fill="rgba(50,30,5,.35)"/>`+
+    `<polygon points="${octagon(cx,cy,R)}" fill="url(#face)" stroke="#a88b55" stroke-width="1.5"/>`+
+    `<polygon points="${octagon(cx,cy,R-3.5)}" fill="none" stroke="${col}" stroke-width="1.6" opacity=".85"/>`+
+    `<text x="${cx}" y="${cy}" dy=".36em" text-anchor="middle" font-family="Noto Serif KR, Batang, serif" font-weight="900" font-size="${fs.toFixed(1)}" fill="${col}">${ch}</text>`;
+}
+function mark(cx,cy){const g=5,l=9;let d='';for(const[sx,sy]of[[-1,-1],[1,-1],[-1,1],[1,1]]){
+  const x0=cx+sx*g,y0=cy+sy*g;if(x0<M||x0>M+8*S)continue;d+=`M${x0},${y0+sy*l}V${y0}H${x0+sx*l}`;}return d;}
+function arrowSVG(m){
+  if(!m||isPass(m))return'';
+  const[x1,y1]=xy(m[0]),[x2,y2]=xy(m[1]),dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;
+  const sx=x1+ux*20,sy=y1+uy*20,ex=x2-ux*14,ey=y2-uy*14;
+  const hx=ex-ux*16,hy=ey-uy*16,px=-uy*9,py=ux*9;
+  return `<g opacity=".85"><line x1="${sx}" y1="${sy}" x2="${hx}" y2="${hy}" stroke="#1f7fc0" stroke-width="7" stroke-linecap="round"/>`+
+    `<polygon points="${ex},${ey} ${hx+px},${hy+py} ${hx-px},${hy-py}" fill="#1f7fc0"/></g>`;
+}
+function render(){
+  const b=edit?edit.cells:cells();
+  let o=`<defs><radialGradient id="face" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#fbf4e1"/><stop offset="1" stop-color="#e5d3a8"/></radialGradient>
+  <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2bd7d"/><stop offset=".5" stop-color="#d6ae6a"/><stop offset="1" stop-color="#cba05d"/></linearGradient></defs>`;
+  o+=`<rect width="560" height="620" fill="url(#wood)"/>`;
+  for(let k=0;k<14;k++)o+=`<path d="M0,${20+k*44} C140,${10+k*44} 300,${34+k*44} 560,${18+k*44}" stroke="#a87c3f" stroke-opacity=".12" fill="none" stroke-width="${1+(k%3)}"/>`;
+  let d='';
+  for(let r=0;r<10;r++)d+=`M${M},${M+r*S}H${M+8*S}`;
+  for(let c=0;c<9;c++)d+=`M${M+c*S},${M}V${M+9*S}`;
+  for(const top of[0,7])d+=`M${M+3*S},${M+top*S}L${M+5*S},${M+(top+2)*S}M${M+5*S},${M+top*S}L${M+3*S},${M+(top+2)*S}`;
+  o+=`<path d="${d}" stroke="#5b3b19" stroke-width="1.4" fill="none"/><rect x="${M}" y="${M}" width="${8*S}" height="${9*S}" fill="none" stroke="#5b3b19" stroke-width="3"/>`;
+  let md='';for(const r of[2,7])for(const c of[1,7]){const[x,y]=xy(r*9+c);md+=mark(x,y);}
+  for(const r of[3,6])for(const c of[0,2,4,6,8]){const[x,y]=xy(r*9+c);md+=mark(x,y);}
+  o+=`<path d="${md}" stroke="#5b3b19" stroke-width="1.2" fill="none"/>`;
+  for(let c=0;c<9;c++){const[x]=xy(c);o+=`<text x="${x}" y="616" text-anchor="middle" font-size="11" fill="#5b3b19" opacity=".65" font-family="IBM Plex Sans KR,sans-serif">${c+1}</text>`;}
+  for(let r=0;r<10;r++){const[,y]=xy(r*9);o+=`<text x="13" y="${y}" dy=".35em" text-anchor="middle" font-size="11" fill="#5b3b19" opacity=".65" font-family="IBM Plex Sans KR,sans-serif">${(r+1)%10}</text>`;}
+  const last=edit?null:st.moves.at(-1);
+  if(last)for(const i of new Set(last)){const[x,y]=xy(i);o+=`<circle cx="${x}" cy="${y}" r="29" fill="#f0d27a" opacity=".6"/>`;}
+  if(!edit&&(st.check||(st.over&&st.over.why==='외통'))){const ki=b.indexOf(st.turn+'K');if(ki>=0){const[x,y]=xy(ki);o+=`<circle cx="${x}" cy="${y}" r="33" fill="#d1301f" opacity=".22"/><circle cx="${x}" cy="${y}" r="33" fill="none" stroke="#d1301f" stroke-width="4"/>`;}}
+  if(st.sel>=0){const[x,y]=xy(st.sel);o+=`<circle cx="${x}" cy="${y}" r="31" fill="none" stroke="#1d7a5f" stroke-width="3.5"/>`;}
+  if(edit)for(let i=0;i<90;i++)if(edit.orig[i]&&!b[i]){const[x,y]=xy(i);o+=`<g opacity=".22">${pieceSVG(edit.orig[i],x,y)}</g><path d="M${x-10},${y-10}L${x+10},${y+10}M${x+10},${y-10}L${x-10},${y+10}" stroke="#7a2a1f" stroke-width="3"/>`;}
+  for(let i=0;i<90;i++)if(b[i]){const[x,y]=xy(i);o+=pieceSVG(b[i],x,y);}
+  for(const m of st.targets){if(isPass(m))continue;const[x,y]=xy(m[1]);
+    o+=b[m[1]]?`<circle cx="${x}" cy="${y}" r="30" fill="none" stroke="#1d7a5f" stroke-width="3" stroke-dasharray="6 4"/>`:`<circle cx="${x}" cy="${y}" r="9" fill="#1d7a5f" opacity=".75"/>`;}
+  if(!edit)o+=`<g id="arrowLayer">${arrowSVG(st.arrow)}</g>`;
+  svg.innerHTML=o;
+  renderPanel(b);renderEngine();renderEditBar();
+}
+function drawArrowOnly(){const g=document.getElementById('arrowLayer');if(g)g.innerHTML=arrowSVG(st.arrow);}
+
+function renderPanel(b){
+  const tc=document.getElementById('turnChip'),tt=document.getElementById('turnText'),msg=document.getElementById('msg');
+  const c=st.cfg;
+  if(st.over){
+    tc.className='chip '+st.over.w;tt.textContent=`${NAME[st.over.w]} 승리`;
+    msg.innerHTML=st.over.why==='외통'?'<strong>외통!</strong> 더 피할 곳이 없습니다.':st.over.why==='기권'?`${NAME[opp(st.over.w)]} 기권`:st.over.why==='수제한'?`${st.moves.length}수 · 200수 규칙으로 기물 점수 판정 (초 ${material().c} : 한 ${material().h})`:'양쪽 모두 한수쉼, 기물 점수로 판정했습니다.';
+  }else{
+    tc.className='chip '+st.turn;
+    const who=c.mode==='vs'?(st.turn===c.human?' (나)':' (엔진)'):c.mode==='ee'?' (엔진)':'';
+    tt.textContent=`${NAME[st.turn]} 차례${who}`;
+    const prevCheck=st.moves.length&&st.lastWasCheck;
+    if(st.check)msg.innerHTML='<strong>장군!</strong> 궁을 지키세요.';
+    else if(prevCheck)msg.innerHTML='<strong class="ok">멍군!</strong>';
+    else if(job&&job.kind==='move')msg.innerHTML='<span class="thinking">엔진이 수를 읽는 중…</span>';
+    else if(st.blocked)msg.textContent='같은 수를 3번 반복할 수 없어서 막힌 수가 있습니다 (동형반복 금지).';
+    else msg.textContent=st.moves.length?`마지막 수: ${notate(cellsAt(st.moves.length-1),st.moves.at(-1))}`:`${NAME[st.startSide]}가 먼저 둡니다. 기물을 눌러 갈 곳을 확인하세요.`;
+  }
+  const sc=material();
+  document.getElementById('scoreC').textContent=sc.c;
+  document.getElementById('moveNo').textContent=st.moves.length>=MOVE_LIMIT?`${st.moves.length}수 (연장)`:`${st.moves.length}수 / ${MOVE_LIMIT}`;document.getElementById('scoreH').textContent=sc.h;
+  const ol=document.getElementById('moves');
+  if(!st.moves.length)ol.innerHTML='<li class="empty">아직 둔 수가 없습니다.</li>';
+  else{let s='',bb=st.start;const notes=st.moves.map(m=>{const n=notate(bb,m);bb=applyCells(bb,m);return n;});
+    if(st.startSide==='h')notes.unshift('…');
+    for(let k=0;k<notes.length;k+=2)s+=`<li class="n">${k/2+1}.</li><li class="c">${notes[k]}</li><li class="h">${notes[k+1]||''}</li>`;
+    ol.innerHTML=s;ol.scrollTop=ol.scrollHeight;}
+  const busy=!!(job&&job.kind==='move');
+  document.getElementById('undo').disabled=!st.moves.length;
+  document.getElementById('hintBtn').disabled=!!st.over||engineTurn();
+  document.getElementById('pass').disabled=!!st.over||engineTurn()||st.check;
+  document.getElementById('now').disabled=!busy;
+  document.getElementById('resign').disabled=!!st.over||c.mode==='ee';
+  document.getElementById('label').textContent=useHanja?'한글 표기':'한자 표기';
+  const bar=document.getElementById('evalbar');bar.classList.toggle('flip',st.flip);
+}
+function renderEngine(){
+  const ev=document.getElementById('ev'),meta=document.getElementById('meta'),pv=document.getElementById('pv'),fill=document.getElementById('evalfill');
+  const i=st.info;
+  if(!i){
+    ev.textContent='—';ev.className='ev';
+    meta.textContent=job?(job.kind==='analyze'?'분석 시작…':'읽는 중…'):'대기 중';
+    if(!job)pv.innerHTML='<span class="hint">엔진이 읽은 최선 수순이 여기에 나옵니다.</span>';
+    return;
+  }
+  const s=i.choScore,MATE=30000;let txt,frac;
+  if(Math.abs(s)>MATE-200){const n=Math.ceil((MATE-Math.abs(s))/2);txt=`${s>0?'초':'한'} ${n}수 외통`;frac=s>0?1:0;}
+  else{txt=(s>=0?'+':'')+(s/100).toFixed(2);frac=1/(1+Math.exp(-s/500));}
+  ev.textContent=txt;ev.className='ev '+(s>=0?'c':'h');
+  fill.style.height=(frac*100).toFixed(1)+'%';
+  const npsT=i.nps>=1e6?`${(i.nps/1e6).toFixed(1)}백만`:`${(i.nps/1000).toFixed(0)}천`;
+  meta.innerHTML=(i.stale&&!job?'직전 엔진 판단 · ':'')+`깊이 ${i.depth}<br>${npsT} 국면/초 · ${(i.nodes/1e6).toFixed(1)}백만`;
+  let bb=st.start;for(let k=0;k<(job?job.ply:st.moves.length);k++)bb=applyCells(bb,st.moves[k]);
+  let side=turnOf(job?job.ply:st.moves.length),out=[];
+  for(const m of i.pv.slice(0,10)){out.push(`<span class="${side}">${notate(bb,m)}</span>`);bb=applyCells(bb,m);side=opp(side);}
+  pv.innerHTML=out.join(' · ');
+}
+
+/* ---------- 입력 ---------- */
+svg.addEventListener('click',e=>{
+  if(!edit&&(st.over||engineTurn()))return;
+  const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+  let c=Math.round((p.x-M)/S),r=Math.round((p.y-M)/S);
+  if(r<0||r>9||c<0||c>8||Math.hypot(p.x-(M+c*S),p.y-(M+r*S))>S*.5)return;
+  if(st.flip){r=9-r;c=8-c;}
+  if(edit){const k=r*9+c,o=edit.orig[k];if(o&&o[1]!=='K'){edit.cells[k]=edit.cells[k]?null:o;render();}return;}
+  const i=r*9+c,b=cells();
+  const hit=st.targets.find(m=>m[1]===i&&!isPass(m));
+  if(hit){doMove(hit);return;}
+  const q=b[i];
+  if(q&&q[0]===st.turn&&st.sel!==i){st.sel=i;st.targets=st.legal.filter(m=>m[0]===i);}
+  else{st.sel=-1;st.targets=[];}
+  render();
+});
+const $=id=>document.getElementById(id);
+$('undo').onclick=undo;
+$('hintBtn').onclick=()=>{if(st.over||engineTurn())return;if($('analyze').checked&&st.info&&st.info.pv.length){st.arrow=st.info.pv[0];drawArrowOnly();return;}startSearch('hint');};
+$('pass').onclick=()=>{const m=st.legal.find(isPass);if(m&&!engineTurn())doMove(m);};
+$('now').onclick=moveNow;
+$('flip').onclick=()=>{st.flip=!st.flip;render();};
+$('label').onclick=()=>{useHanja=!useHanja;store.set('hanja',useHanja);render();};
+$('analyze').onchange=()=>{store.set('analyze',$('analyze').checked);if(!engineTurn()){stopSearch();st.info=null;st.arrow=null;schedule();render();}};
+let resignArm=null;
+$('resign').onclick=()=>{
+  const btn=$('resign');
+  if(!resignArm){btn.textContent='한 번 더';resignArm=setTimeout(()=>{resignArm=null;btn.textContent='기권';},2500);return;}
+  clearTimeout(resignArm);resignArm=null;btn.textContent='기권';
+  stopSearch();const loser=st.cfg.mode==='vs'?st.cfg.human:st.turn;st.over={w:opp(loser),why:'기권'};render();
+};
+$('editOpen').onclick=openEdit;
+$('editStart').onclick=startEdit;
+$('editCancel').onclick=()=>{edit=null;render();schedule();};
+$('editAll').onclick=()=>{if(edit){edit.cells=edit.orig.slice();render();}};
+$('newBtn').onclick=()=>{$('setup').open=true;$('setup').scrollIntoView({behavior:'smooth',block:'center'});};
+$('copyLog').onclick=()=>{
+  let bb=st.start;const t=st.moves.map((m,k)=>{const n=notate(bb,m);bb=applyCells(bb,m);return (k%2?'':`${k/2+1}. `)+n;}).join(' ');
+  const done=()=>{$('copyLog').textContent='복사됨';setTimeout(()=>$('copyLog').textContent='기보 복사',1500);};
+  if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,()=>{});
+};
+$('form').addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target;
+  newGame(formCfg());
+  $('setup').open=false;
+});
+function fillForm(c){
+  for(const r of document.querySelectorAll('input[name=mode]'))r.checked=r.value===c.mode;
+  $('side').value=c.human;$('level').value=c.level;$('ttime').value=c.ttime;$('setC').value=c.setC;$('setH').value=c.setH;
+}
+function start(data){
+  const cfg=Object.assign({},defaultCfg,store.get('cfg',{}),(data&&data.cfg)||{});
+  fillForm(cfg);$('analyze').checked=store.get('analyze',false);
+  newGame(cfg);
+  if(data&&data.moves&&data.moves.length){stopSearch();st.moves=data.moves.slice();positionChanged();}
+}
+window.claude?.hot?.snapshot?.(()=>({cfg:st.cfg,moves:st.moves}));
+async function loadEngineCfg(){
+  if(!REMOTE||REMOTE.device!=='cpu')return;
+  let s;try{s=await api('/api/settings');}catch(e){return;}
+  $('engineCfg').hidden=false;
+  const hs=$('cfgHash');hs.innerHTML='';
+  const opts=new Set();for(let h=256;h<=s.max_hash;h*=2)opts.add(h);opts.add(s.hash);opts.add(s.max_hash);
+  for(const h of [...opts].sort((a,b)=>a-b))hs.add(new Option(fmtMB(h)+(h===s.max_hash?' (최대)':''),h,false,h===s.hash));
+  const ts=$('cfgThreads');ts.innerHTML='';
+  for(let t=1;t<=s.cpus;t++)ts.add(new Option(t===s.cpus?`${t} (전체)`:String(t),t,false,t===s.threads));
+  $('cfgNote').textContent=`PC 메모리 ${Math.round(s.ram_mb/1024)}GB · 해시 최대 ${fmtMB(s.max_hash)}`;
+}
+async function applyEngineCfg(){
+  const btn=$('cfgApply'),note=$('cfgNote');
+  btn.disabled=true;note.textContent='적용 중… 큰 메모리는 잡는 데 몇 초 걸립니다';
+  stopSearch();
+  try{
+    const r=await api('/api/settings',{hash:+$('cfgHash').value,threads:+$('cfgThreads').value});
+    if(r.ok){REMOTE.hash=r.hash;REMOTE.threads=r.threads;setEngineLabel();note.textContent=`적용됨 · 다음 실행 때도 유지됩니다`;}
+    else note.textContent=r.error||'적용하지 못했습니다';
+  }catch(e){note.textContent='엔진 연결이 끊겼습니다. 검은 창을 확인하세요.';}
+  btn.disabled=false;
+  if(st&&!st.over)schedule();render();
+}
+const boot=d=>detectRemote().then(()=>{start(d);loadEngineCfg();$('cfgApply').onclick=applyEngineCfg;});
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
+})();
+</script>
