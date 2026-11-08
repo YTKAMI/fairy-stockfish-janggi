@@ -14,6 +14,7 @@ android {
         ndk { abiFilters += listOf("arm64-v8a") }
     }
     buildTypes { release { isMinifyEnabled = false } }
+    packaging { jniLibs { useLegacyPackaging = true; keepDebugSymbols += "**/libfairy-stockfish.so" } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
 }
