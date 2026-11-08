@@ -28,6 +28,7 @@ class MainActivity:Activity(){
     private lateinit var progress:ProgressBar
     private lateinit var factoryStatus:TextView
     private val executor=Executors.newSingleThreadExecutor()
+    private var isPaused=false
     private val paper=Color.rgb(248,245,235)
     private val ink=Color.rgb(48,55,47)
     private val muted=Color.rgb(119,112,94)
@@ -93,8 +94,9 @@ class MainActivity:Activity(){
         progress=ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal).apply{max=100;progress=0}
         dataCard.addView(progress,LinearLayout.LayoutParams(-1,dp(8)).apply{topMargin=dp(9);bottomMargin=dp(10)})
         val factoryButtons=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL}
-        factoryButtons.addView(button("데이터 생성 시작",green){startFactory()},LinearLayout.LayoutParams(0,dp(48),1f).apply{rightMargin=dp(5)})
-        factoryButtons.addView(button("생성 중지",red){stopFactory()},LinearLayout.LayoutParams(0,dp(48),1f).apply{leftMargin=dp(5)})
+        factoryButtons.addView(button("데이터 생성",green){startFactory()},LinearLayout.LayoutParams(0,dp(48),1f).apply{rightMargin=dp(3)})
+        factoryButtons.addView(button("일시 정지",Color.rgb(177,126,45)){togglePause()},LinearLayout.LayoutParams(0,dp(48),1f).apply{leftMargin=dp(3);rightMargin=dp(3)})
+        factoryButtons.addView(button("생성 중지",red){stopFactory()},LinearLayout.LayoutParams(0,dp(48),1f).apply{leftMargin=dp(3)})
         dataCard.addView(factoryButtons)
         dataCard.addView(button("NPZ 파일 내보내기",Color.rgb(83,96,107)){exportNpz()},LinearLayout.LayoutParams(-1,dp(44)).apply{topMargin=dp(8)})
         body.addView(dataCard)
@@ -127,6 +129,7 @@ class MainActivity:Activity(){
         if(Build.VERSION.SDK_INT>=26)startForegroundService(i)else startService(i)
         factoryStatus.text="데이터 생성 시작 요청 · 알림에서 진행 상황을 확인할 수 있습니다."
     }
+    private fun togglePause(){isPaused=!isPaused;val action=if(isPaused)FactoryService.ACTION_PAUSE else FactoryService.ACTION_RESUME;startService(Intent(this,FactoryService::class.java).setAction(action));factoryStatus.text=if(isPaused)"일시 정지 요청" else "데이터 생성 재개 요청"}
     private fun stopFactory(){startService(Intent(this,FactoryService::class.java).setAction(FactoryService.ACTION_STOP));factoryStatus.text="중지 요청을 보냈습니다. 현재 탐색이 끝나면 정지합니다."}
     private fun exportNpz(){
         val dir=File(getExternalFilesDir(null)?:filesDir,"JanggiNPZ")
