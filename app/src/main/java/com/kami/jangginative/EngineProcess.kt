@@ -45,7 +45,7 @@ class EngineProcess(private val context: Context) {
                 append("엔진 실행 실패: ").append(e.message ?: e.javaClass.simpleName)
                 val p=process
                 if(p!=null) {
-                    append(" / pid=").append(p.pid())
+                    append(" / alive=").append(p.isAlive)
                     if(!p.isAlive) try { append(" / exit=").append(p.exitValue()) } catch(_:Exception) {}
                 }
                 append(" / 경로=").append(enginePath)
@@ -61,9 +61,9 @@ class EngineProcess(private val context: Context) {
             val exit=if(p!=null)try{p.exitValue().toString()}catch(_:Exception){"unknown"}else "no-process"
             throw IOException("엔진 프로세스가 실행 중이 아닙니다 (상태="+exit+", writer="+(writer!=null)+").")
         }
-        val w=writer ?: throw IOException("엔진 입력 스트림이 초기화되지 않았습니다 (pid="+p.pid()+").")
+        val w=writer ?: throw IOException("엔진 입력 스트림이 초기화되지 않았습니다.")
         try { w.write(s);w.newLine();w.flush() }
-        catch(e:IOException){throw IOException("엔진 명령 전송 실패: "+s+" (pid="+p.pid()+", alive="+p.isAlive+")",e)}
+        catch(e:IOException){throw IOException("엔진 명령 전송 실패: "+s+" (alive="+p.isAlive+")",e)}
     }
 
     private fun readUntil(marker:String):String {
