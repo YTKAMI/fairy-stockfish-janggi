@@ -2,35 +2,28 @@
 """Windows EXE entry point for Janggi Engine Board."""
 import os
 import sys
-import importlib
+import runpy
 
-# Ensure both the PyInstaller bundle directory and the EXE directory are searchable.
+# PyInstaller onedir 환경에서 모듈 검색에 의존하지 않고 서버 파일을 직접 실행한다.
 if getattr(sys, "frozen", False):
     bundle_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(sys.executable)))
     exe_dir = os.path.dirname(os.path.abspath(sys.executable))
-    for path in (bundle_dir, exe_dir):
-        if path not in sys.path:
-            sys.path.insert(0, path)
+    server_path = os.path.join(bundle_dir, "janggi_server.py")
     os.chdir(exe_dir)
 else:
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    if script_dir not in sys.path:
-        sys.path.insert(0, script_dir)
+    bundle_dir = os.path.dirname(os.path.abspath(__file__))
+    server_path = os.path.join(bundle_dir, "janggi_server.py")
+    if bundle_dir not in sys.path:
+        sys.path.insert(0, bundle_dir)
 
-try:
-    janggi_server = importlib.import_module("janggi_server")
-except Exception as exc:
-    message = (
-        "장기 엔진판 서버 모듈(janggi_server)을 불러오지 못했습니다.\n\n"
-        f"오류: {type(exc).__name__}: {exc}\n\n"
-        "프로그램 폴더 전체를 압축 해제했는지 확인해 주세요."
-    )
+if not os.path.isfile(server_path):
+    message = "서버 파일 janggi_server.py를 찾을 수 없습니다. 프로그램 폴더를 다시 압축 해제해 주세요.\n\n경로: " + server_path
     try:
         import tkinter.messagebox as mb
         mb.showerror("장기 엔진판 시작 오류", message)
     except Exception:
         print(message, file=sys.stderr)
-    raise
+    raise SystemExit(1)
 
-if __name__ == "__main__":
-    janggi_server.main()
+# runpy 실행은 importlib/PYZ 모듈 탐색 문제를 우회한다.
+runpy.run_path(server_path, run_name="__main__")
