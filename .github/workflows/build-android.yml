@@ -23,7 +23,9 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
       - name: Install Android SDK packages
         run: |
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
@@ -33,6 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
+          mkdir -p app/src/main/assets
           git clone --depth 1 https://github.com/fairy-stockfish/Fairy-Stockfish.git engine-src
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.2.12479018"
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
